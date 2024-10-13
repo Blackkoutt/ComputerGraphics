@@ -1,0 +1,20 @@
+ShapeType: Rectangle
+StartPoint: X:136 Y:46
+EndPoint: X:408 Y:134
+Stroke: #FF800080
+Fill: #FF00FF00
+StrokeTickness: 15
+
+ShapeType: Circle
+StartPoint: X:135 Y:285
+EndPoint: X:222 Y:355
+Stroke: #FFA52A2A
+Fill: #FFF5F5DC
+StrokeTickness: 10
+
+ShapeType: Line
+StartPoint: X:336 Y:221
+EndPoint: X:492 Y:353
+Stroke: #FF008080
+Fill: #FFF5F5DC
+StrokeTickness: 7
