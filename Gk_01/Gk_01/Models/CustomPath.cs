@@ -8,6 +8,20 @@ namespace Gk_01.Models
     public abstract class CustomPath : System.Windows.Shapes.Shape
     {
         protected string shapeType = string.Empty;
+        protected Point defaultStartPoint;
+        protected Point defaultEndPoint;
+
+        public Point DefaultStartPoint
+        {
+            get { return defaultStartPoint; }
+            set { defaultStartPoint = value; }
+        }
+        public Point DefaultEndPoint
+        {
+            get { return defaultEndPoint; }
+            set { defaultEndPoint = value; }
+        }
+
         public Point StartPoint
         {
             get => (Point)GetValue(StartPointProperty);

@@ -10,6 +10,9 @@
     <Compile Update="Controls\InputTypeNumber.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\SelectCompressionLevelDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\InputTypeNumber.xaml">
@@ -22,6 +25,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Styles\Colors.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\SelectCompressionLevelDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>

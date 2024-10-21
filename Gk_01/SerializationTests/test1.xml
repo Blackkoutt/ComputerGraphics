@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-16"?>
+<ArrayOfShapeDto xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ShapeDto>
+    <ShapeType>Line</ShapeType>
+    <StartPoint>
+      <X>252</X>
+      <Y>101</Y>
+    </StartPoint>
+    <EndPoint>
+      <X>164</X>
+      <Y>152</Y>
+    </EndPoint>
+    <Stroke>#FF000000</Stroke>
+    <Fill>#00FFFFFF</Fill>
+    <StrokeTickness>1</StrokeTickness>
+  </ShapeDto>
+  <ShapeDto>
+    <ShapeType>Circle</ShapeType>
+    <StartPoint>
+      <X>369</X>
+      <Y>290</Y>
+    </StartPoint>
+    <EndPoint>
+      <X>268</X>
+      <Y>209</Y>
+    </EndPoint>
+    <Stroke>#FF7FFF00</Stroke>
+    <Fill>#FFA52A2A</Fill>
+    <StrokeTickness>5</StrokeTickness>
+  </ShapeDto>
+  <ShapeDto>
+    <ShapeType>Rectangle</ShapeType>
+    <StartPoint>
+      <X>63</X>
+      <Y>258</Y>
+    </StartPoint>
+    <EndPoint>
+      <X>182</X>
+      <Y>402</Y>
+    </EndPoint>
+    <Stroke>#FF7FFFD4</Stroke>
+    <Fill>#FF8A2BE2</Fill>
+    <StrokeTickness>5</StrokeTickness>
+  </ShapeDto>
+</ArrayOfShapeDto>

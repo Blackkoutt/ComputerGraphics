@@ -4,6 +4,11 @@
     {
         JSON,
         TXT,
-        XML
+        XML,
+        PPM,
+        JPEG,
+        JPG,
+        PPM_P3,
+        PPM_P6
     }
 }

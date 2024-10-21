@@ -2,6 +2,7 @@
 using Gk_01.Helpers.DTO;
 using Gk_01.Models;
 using Gk_01.Services.Interfaces;
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -51,7 +52,9 @@ namespace Gk_01.Services.Services
                         EndPoint = endPoint,
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
-                        StrokeThickness = lineThickness
+                        StrokeThickness = lineThickness,
+                        DefaultStartPoint = startPoint,
+                        DefaultEndPoint = endPoint,
                     };
                     break;
                 case ShapeTypeEnum.Circle:
@@ -61,7 +64,9 @@ namespace Gk_01.Services.Services
                         EndPoint = endPoint,
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
-                        StrokeThickness = lineThickness
+                        StrokeThickness = lineThickness,
+                        DefaultStartPoint = startPoint,
+                        DefaultEndPoint = endPoint,
                     };
                     break;
                 case ShapeTypeEnum.Line:
@@ -71,7 +76,9 @@ namespace Gk_01.Services.Services
                         EndPoint = endPoint,
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
-                        StrokeThickness = lineThickness
+                        StrokeThickness = lineThickness,
+                        DefaultStartPoint = startPoint,
+                        DefaultEndPoint = endPoint,
                     };
                     break;
                 default: throw new UnrecognizedShapeTypeException("Nie rozpoznano typu figury.");

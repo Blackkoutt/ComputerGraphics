@@ -10,11 +10,13 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="MainWindow" Height="520" Width="870">
+        Title="MainWindow" Height="580" Width="930">
     <DockPanel>
         <Menu DockPanel.Dock="Top" FontSize="13" Padding="3">
             <MenuItem Header="Plik">
                 <MenuItem Header="Nowy" Command="{Binding NewFileCommand}" />
+                <MenuItem Header="Otwórz" Command="{Binding LoadFileCommand}" />
+                <MenuItem Header="Zapisz jako" Command="{Binding SaveFileCommand}" />
                 <MenuItem Header="Deserializuj" Command="{Binding DeserializeCommand}" />
                 <MenuItem Header="Serializuj jako" Command="{Binding SerializeCommand}" />
                 <Separator />
@@ -30,6 +32,7 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="65" />
+                    <RowDefinition Height="65" />
                     <RowDefinition Height="55" />
                     <RowDefinition Height="55" />
                     <RowDefinition Height="55" />
@@ -43,7 +46,13 @@
                 <RadioButton Margin="10" Command="{Binding ChangeDrawingShapeCommand}" CommandParameter="Line" Grid.Row="0" Grid.Column="2" Style="{StaticResource ResourceKey=menuButton}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                     <fa5:ImageAwesome Icon="Solid_Minus" Width="20" Height="20"/>
                 </RadioButton>
-                <Grid Grid.ColumnSpan="3" Grid.Row="1" Margin="7,5,7,5">
+                <RadioButton Margin="10" Command="{Binding CanvasPaintCommand}" CommandParameter="Line" Grid.Row="1" Grid.Column="0" Style="{StaticResource ResourceKey=menuButton}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                    <fa5:ImageAwesome Icon="Solid_Plus" Width="20" Height="20"/>
+                </RadioButton>
+                <RadioButton Margin="10" Command="{Binding CanvasMoveCommand}" CommandParameter="Line" Grid.Row="1" Grid.Column="1" Style="{StaticResource ResourceKey=menuButton}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
+                    <fa5:ImageAwesome Icon="Solid_ArrowsAlt" Width="20" Height="20"/>
+                </RadioButton>
+                <Grid Grid.ColumnSpan="3" Grid.Row="2" Margin="7,5,7,5">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
@@ -55,7 +64,7 @@
                     <Label Grid.Row="0" Grid.Column="0" VerticalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">Kolor linii:</Label>
                     <xctk:ColorPicker Margin="0,3,0,3" Grid.Row="0" Grid.Column="1" SelectedColor="{Binding SelectedLineColor, Mode=TwoWay}" Grid.ColumnSpan="2"></xctk:ColorPicker>
                 </Grid>
-                <Grid Grid.ColumnSpan="3" Grid.Row="2" Margin="7,5,7,5">
+                <Grid Grid.ColumnSpan="3" Grid.Row="3" Margin="7,5,7,5">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
@@ -66,7 +75,7 @@
                     <Label Grid.Row="0" Grid.Column="0" VerticalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">Kolor wypełnienia:</Label>
                     <xctk:ColorPicker Margin="0,3,0,3" Grid.Row="0" Grid.Column="1" SelectedColor="{Binding SelectedFillColor, Mode=TwoWay}"></xctk:ColorPicker>
                 </Grid>
-                <Grid Grid.ColumnSpan="3" Grid.Row="3" Margin="7,5,4,5">
+                <Grid Grid.ColumnSpan="3" Grid.Row="4" Margin="7,5,4,5">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
@@ -111,22 +120,31 @@
 
             <Button Width="100" Margin="0,10,0,0" Command="{Binding DrawShapeCommand}" Style="{StaticResource ResourceKey=drawButton}" Padding="8" FontSize="13" FontWeight="Bold">Rysuj kształt</Button>
         </StackPanel>
-        <Canvas x:Name="mainCanvas" ClipToBounds="True"
-                Background="Transparent">
-            <Canvas.Cursor>
-                <Binding Path="CanvasCursor" />
-            </Canvas.Cursor>
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="MouseLeftButtonDown">
-                    <mvvm:EventToCommand Command="{Binding CanvasMouseDownCommand}" PassEventArgsToCommand="True"/>
-                </i:EventTrigger>
-                <i:EventTrigger EventName="MouseLeftButtonUp">
-                    <mvvm:EventToCommand Command="{Binding CanvasMouseUpCommand}" PassEventArgsToCommand="True"/>
-                </i:EventTrigger>
-                <i:EventTrigger EventName="MouseMove">
-                    <mvvm:EventToCommand Command="{Binding CanvasMouseMoveCommand}" PassEventArgsToCommand="True"/>
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </Canvas>
+        <ScrollViewer ClipToBounds="True">
+            <Canvas x:Name="mainCanvas" ClipToBounds="True"
+                    RenderTransform="{Binding CanvasRenderTransform}"
+                    Background="Transparent"
+                    Width="{Binding ActualWidth, ElementName=scrollViewer}" 
+                    Height="{Binding ActualHeight, ElementName=scrollViewer}">
+                <Canvas.Cursor>
+                    <Binding Path="CanvasCursor" />
+                </Canvas.Cursor>
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseLeftButtonDown">
+                        <mvvm:EventToCommand Command="{Binding CanvasMouseDownCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseLeftButtonUp">
+                        <mvvm:EventToCommand Command="{Binding CanvasMouseUpCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseMove">
+                        <mvvm:EventToCommand Command="{Binding CanvasMouseMoveCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseWheel">
+                        <mvvm:EventToCommand Command="{Binding CanvasMouseWheelCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </Canvas>
+        </ScrollViewer>
+        
     </DockPanel>
 </Window>

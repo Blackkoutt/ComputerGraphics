@@ -3,7 +3,10 @@ using Gk_01.Enums;
 using Gk_01.Models;
 using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
+using Gk_01.Views;
 using Microsoft.Win32;
+using System.IO;
+using System.IO.Compression;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,6 +19,7 @@ namespace Gk_01.ViewModels
     {
         private static MainWindowViewModel? _instance = null;
         private Canvas? _canvas;
+        private Image? _currentImage;
         private int p0_x;
         private int p0_y;
         private int p1_x;
@@ -29,10 +33,25 @@ namespace Gk_01.ViewModels
         private ShapeElement? _currentCharacteristicPoint;
         private bool _isResizing = false;
         private bool _isMoving = false;
+        private bool _isCanvasMoving = false;
         private bool _isSaved = true;
         private Point _mouseClickOnShapePosition;
+        private Point _mouseClickOnCanvasPosition;
         private Point _defaultShape_P0;
         private Point _defaultShape_P1;
+        private ScaleTransform _scaleTransform;
+        private TranslateTransform _translateTransform;
+        private TransformGroup _canvasRenderTransform;
+        private CanvasMode _actualCanvasMode = CanvasMode.Paint;
+        private int imageDefaultLeft = 0;
+        private int imageDefaultTop = 0;    
+
+        private double zoomMax = 20;
+        private double zoomMin = 0.5;
+        private double zoomSpeed = 0.001;
+        private double zoom = 1;
+        //private double _currentZoom = 1.0;
+        // private const double zoomStep = 0.1;
         private Cursor _canvasCursor = Cursors.Cross;
         private readonly IFileService _fileService;
         private readonly IDrawingService _drawingService;
@@ -45,6 +64,11 @@ namespace Gk_01.ViewModels
         public ICommand DeserializeCommand { get; set; }
         public ICommand NewFileCommand { get; set; }
         public ICommand CloseCommand { get; set; }
+        public ICommand CanvasMouseWheelCommand { get; set; }
+        public ICommand LoadFileCommand { get; set; }
+        public ICommand CanvasMoveCommand { get; set; }
+        public ICommand CanvasPaintCommand { get; set; }
+        public ICommand SaveFileCommand { get; set; }
 
         public MainWindowViewModel(IFileService fileService, IDrawingService drawingService)
         {
@@ -57,8 +81,19 @@ namespace Gk_01.ViewModels
             DeserializeCommand = new RelayCommand(DeserializeObjects);
             NewFileCommand = new RelayCommand(NewFile);
             CloseCommand = new RelayCommand(Close);
+            CanvasMouseWheelCommand = new RelayCommand(CanvasMouseWheel);
+            LoadFileCommand = new RelayCommand(LoadGraphicFile);
+            CanvasMoveCommand = new RelayCommand(CanvasMove);
+            CanvasPaintCommand = new RelayCommand(CanvasPaint);
+            SaveFileCommand = new RelayCommand(SaveFile);
             _fileService = fileService;
             _drawingService = drawingService;
+
+            _scaleTransform = new ScaleTransform(1.0, 1.0);
+            _translateTransform = new TranslateTransform(0, 0);
+            CanvasRenderTransform = new TransformGroup();
+            CanvasRenderTransform.Children.Add(_scaleTransform);
+            CanvasRenderTransform.Children.Add(_translateTransform);
         }
 
         private void DrawShapeHandler(object parameter)
@@ -105,10 +140,17 @@ namespace Gk_01.ViewModels
                 Point clickPosition = e.GetPosition(_canvas);
                 var hitElement = _canvas!.InputHitTest(clickPosition) as UIElement;
 
-                if (_currentShapeType != null)
+                if (_currentShapeType != null && _actualCanvasMode == CanvasMode.Paint)
                     DrawShapeByMouseClick(clickPosition);
 
-                if (firstClickPoint == null && hitElement != null && hitElement is CustomPath shapePath)
+                if(_actualCanvasMode == CanvasMode.Move)
+                {
+                    _isCanvasMoving = true;
+                    _mouseClickOnCanvasPosition = clickPosition;
+                    _canvas.CaptureMouse();
+                }
+
+                if (firstClickPoint == null && _actualCanvasMode == CanvasMode.Paint && hitElement != null && hitElement is CustomPath shapePath)
                 {
                     // Set previous shape color to default color
                     if (_currentShape != null)
@@ -193,6 +235,28 @@ namespace Gk_01.ViewModels
                 {
                     MoveShape(currentMousePosition);
                 }
+                if (_isCanvasMoving)
+                {
+                    var deltaX = (int)(currentMousePosition.X - _mouseClickOnCanvasPosition.X);
+                    var deltaY = (int)(currentMousePosition.Y - _mouseClickOnCanvasPosition.Y);
+                    Console.WriteLine("DeltaX: " + deltaX);
+                    Console.WriteLine("DeltaY: " + deltaY);
+                    foreach (UIElement child in _canvas.Children)
+                    {
+                        if(child is Image image)
+                        {
+                            Canvas.SetLeft(image, imageDefaultLeft + deltaX);
+                            Canvas.SetTop(image, imageDefaultTop + deltaY);
+                        }
+                        if(child is CustomPath childPath)
+                        {
+                            childPath.SetStartPointX(childPath.DefaultStartPoint.X + deltaX);
+                            childPath.SetStartPointY(childPath.DefaultStartPoint.Y + deltaY);
+                            childPath.SetEndPointX(childPath.DefaultEndPoint.X + deltaX);
+                            childPath.SetEndPointY(childPath.DefaultEndPoint.Y + deltaY);
+                        }
+                    }
+                }
             
             }
         }
@@ -229,7 +293,27 @@ namespace Gk_01.ViewModels
         {
             _isResizing = false;
             _isMoving = false;
-            CanvasCursor = Cursors.Cross;
+            
+            if(_isCanvasMoving ) 
+            {
+                foreach (UIElement child in _canvas.Children)
+                {
+                    if(child is Image image)
+                    {
+                        imageDefaultLeft = (int)Canvas.GetLeft(image); 
+                        imageDefaultTop = (int)Canvas.GetTop(image);    
+                    }
+                    if (child is CustomPath childPath)
+                    {
+                        childPath.DefaultStartPoint = childPath.StartPoint;
+                        childPath.DefaultEndPoint = childPath.EndPoint;
+                    }
+                }
+                _isCanvasMoving = false;
+                _canvas.ReleaseMouseCapture();
+            }
+            if(_actualCanvasMode == CanvasMode.Paint) CanvasCursor = Cursors.Cross;
+            else if (_actualCanvasMode == CanvasMode.Move) CanvasCursor = Cursors.SizeAll;
             if (_currentShape != null) _currentShape.ReleaseMouseCapture();
         }   
 
@@ -282,6 +366,7 @@ namespace Gk_01.ViewModels
         private void NewFile(object parameter)
         {
             _drawingService.ClearCanvas();
+            _currentImage = null;
             P0_X = 0;
             P0_Y = 0;
             P1_X = 0;
@@ -296,6 +381,66 @@ namespace Gk_01.ViewModels
             _isResizing = false;
             _isMoving = false;
             _isSaved = true;
+        }
+
+        private void SaveFile(object parameter)
+        {
+            if (_currentImage != null)
+            {
+                Dictionary<FileType, string> fileTypeDictionary = new Dictionary<FileType, string>
+                {
+                    { FileType.PPM_P3, "PPM P3 files (*.ppm)|*.ppm" },
+                    { FileType.PPM_P6, "PPM P6 files (*.ppm)|*.ppm" },
+                    { FileType.JPEG, "JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg" }
+                };
+                SaveFileDialog saveFileDialog = new SaveFileDialog()
+                {
+                    Title = "Zapisz jako",
+                    Filter = string.Join("|", fileTypeDictionary.Values),
+                    FilterIndex = 1 // default 
+                };
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    var filePath = saveFileDialog.FileName;
+                    var fileType = fileTypeDictionary.ElementAt(saveFileDialog.FilterIndex - 1).Key;
+                    int? compressionLevel = null;
+                    if(fileType == FileType.JPEG)
+                    {
+                        SelectCompressionLevelDialog optionDialog = new SelectCompressionLevelDialog();
+                        var viewModel = optionDialog.DataContext as SelectCompressionLevelDialogViewModel;
+                        if (optionDialog.ShowDialog() == true && viewModel != null)
+                            compressionLevel = viewModel.SelectedOption;
+                    }
+                    _fileService.SaveImage(_currentImage, filePath, fileType, compressionLevel);
+                }
+            }
+            else
+            {
+                MessageBox.Show($"Płótno nie zawiera żadnych obrazów",
+                                "",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+            }
+        }
+
+        private async void LoadGraphicFile(object parameter)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Otwórz plik graficzny",
+                Filter = "PPM files (*.ppm)|*.ppm|JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg|All files (*.*)|*.*",
+                Multiselect = false
+            };
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+                var image = await _fileService.LoadImage(filePath);
+                _currentImage = image;
+                _drawingService.ClearCanvas();
+                _canvas!.Children.Add(image);
+                imageDefaultLeft = 0;
+                imageDefaultTop = 0;
+            }
         }
 
         private void DeserializeObjects(object parameter)
@@ -361,6 +506,55 @@ namespace Gk_01.ViewModels
             }
         }
 
+        private void CanvasPaint(object parameter)
+        {
+            _actualCanvasMode = CanvasMode.Paint;
+            CanvasCursor = Cursors.Cross;
+        }
+
+        private void CanvasMove(object parameter)
+        {
+            _actualCanvasMode = CanvasMode.Move;
+            CanvasCursor = Cursors.SizeAll;
+        }
+
+        private void CanvasMouseWheel(object parameter)
+        {
+            if (parameter is MouseWheelEventArgs e)
+            {
+                zoom += zoomSpeed * e.Delta;
+                if (zoom < zoomMin) { zoom = zoomMin; }
+                if (zoom > zoomMax) { zoom = zoomMax; }
+
+                Point mousePos = e.GetPosition(_canvas);
+
+                Transform transform;
+                if (zoom > 1)
+                {
+                    transform = new ScaleTransform(zoom, zoom, mousePos.X, mousePos.Y);
+                }
+                else
+                {
+                    transform = new ScaleTransform(zoom, zoom);
+                }
+                foreach (UIElement child in _canvas.Children)
+                {
+                    child.RenderTransform = transform;
+                }
+
+            }
+        }
+
+
+        public TransformGroup CanvasRenderTransform
+        {
+            get { return _canvasRenderTransform; }
+            set
+            {
+                _canvasRenderTransform = value;
+                OnPropertyChanged();
+            }
+        }
         public Color SelectedLineColor
         {
             get { return selectedLineColor; }
