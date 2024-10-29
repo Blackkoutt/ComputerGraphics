@@ -16,18 +16,18 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <TextBox x:Name="InputTypeNumberTextBox" LostFocus="InputTypeNumberTextBox_LostFocus" CaretBrush="{StaticResource ResourceKey=white}" PreviewTextInput="InputTypeNumberTextBox_preview_text_input" Text="{Binding InputValue}" Grid.RowSpan="2" Grid.Column="0" FontSize="14" VerticalContentAlignment="Bottom" Padding="2,0,0,2" Foreground="{StaticResource ResourceKey=white}" Background="Transparent" BorderThickness="0,0,0,1"></TextBox>
+        <TextBox x:Name="InputTypeNumberTextBox" LostFocus="InputTypeNumberTextBox_LostFocus" CaretBrush="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" PreviewTextInput="InputTypeNumberTextBox_preview_text_input" Text="{Binding InputValue}" Grid.RowSpan="2" Grid.Column="0" FontSize="14" VerticalContentAlignment="Bottom" Padding="2,0,0,2" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" Background="Transparent" BorderThickness="0,0,0,1"></TextBox>
         <Button x:Name="Button_Up" Grid.Row="0" Grid.Column="1" Style="{StaticResource UpDownButton}" 
                 PreviewMouseDown="Button_Up_PreviewMouseDown" 
                 PreviewMouseUp="Button_Up_PreviewMouseUp"
                 Click="Button_Up_Click">
-            <fa5:ImageAwesome Icon="Solid_ChevronUp" Foreground="{StaticResource ResourceKey=white}" Width="10" Height="10"/>
+            <fa5:ImageAwesome Icon="Solid_ChevronUp" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}"  Width="10" Height="10"/>
         </Button>
         <Button x:Name="Button_Down" Grid.Row="1" Grid.Column="1" Style="{StaticResource UpDownButton}"
                 PreviewMouseDown="Button_Down_PreviewMouseDown" 
                 Click="Button_Down_Click" 
                 PreviewMouseUp="Button_Down_PreviewMouseUp">
-            <fa5:ImageAwesome Icon="Solid_ChevronDown" Foreground="{StaticResource ResourceKey=white}" Width="10" Height="10"/>
+            <fa5:ImageAwesome Icon="Solid_ChevronDown" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=UserControl}}" Width="10" Height="10"/>
         </Button>
     </Grid>
 </UserControl>

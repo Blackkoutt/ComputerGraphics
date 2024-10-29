@@ -1,14 +1,9 @@
-﻿using Gk_01.Controls;
-using Gk_01.Helpers.GraphicFileReaders;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using Gk_01.Helpers.GraphicFileReaders;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Xml;
 
 namespace Gk_01.Helpers.GraphicFileLoaders
 {
@@ -31,12 +26,11 @@ namespace Gk_01.Helpers.GraphicFileLoaders
             List<string> values = [];
             var imageDataStartIndex = 0;
 
+            // Split lines
             foreach (var line in lines)
             {
-                // Pomijanie linii pustych
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                // Usuwanie komentarzy
                 var commentIndex = line.IndexOf('#');
                 if (commentIndex != -1)
                 {
@@ -45,10 +39,10 @@ namespace Gk_01.Helpers.GraphicFileLoaders
                 }
                 else lineContent = line;
 
-                // Podział na wartości
                 var lineValues = lineContent.Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                 values.AddRange(lineValues);
             }
+
             for (var i = 0; i < values.Count; i++)
             {
                 var stringValue = values[i];

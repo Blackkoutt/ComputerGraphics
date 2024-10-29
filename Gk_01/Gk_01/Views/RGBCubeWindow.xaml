@@ -1,0 +1,77 @@
+﻿<Window x:Class="Gk_01.Views.RGBCubeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gk_01.Views"
+        mc:Ignorable="d"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        Title="RGBCubeWindow" Height="450" Width="800">
+        <i:Interaction.Triggers>
+            <i:EventTrigger EventName="Loaded">
+                <i:InvokeCommandAction Command="{Binding LoadedCommand}" />
+            </i:EventTrigger>
+        </i:Interaction.Triggers>
+    <Grid>
+        <Viewport3D Name="viewport">
+            <Viewport3D.Camera>
+                <PerspectiveCamera Position="3 3 3" LookDirection="-1 -1 -1" UpDirection="0 1 0" FieldOfView="45"/>
+            </Viewport3D.Camera>
+            <ModelVisual3D x:Name="visualModel">
+                <ModelVisual3D.Content>
+                    <Model3DGroup>
+                        <!-- Światło ambientowe dla równomiernego oświetlenia -->
+                        <AmbientLight Color="White" />
+
+                        <!-- Kilka świateł kierunkowych z różnych kierunków -->
+                        <DirectionalLight Color="White" Direction="-1,-1,-1" />
+                        <DirectionalLight Color="White" Direction="1,-1,-1" />
+                        <DirectionalLight Color="White" Direction="-1,1,-1" />
+                        <DirectionalLight Color="White" Direction="-1,-1,1" />
+                    </Model3DGroup>
+                </ModelVisual3D.Content>
+                <ModelVisual3D.Transform>
+                    <Transform3DGroup>
+                        <RotateTransform3D x:Name="rotateX" CenterX="0.5" CenterY="0.5" CenterZ="0.5">
+                            <RotateTransform3D.Rotation>
+                                <AxisAngleRotation3D Axis="1 0 0" Angle="0"/>
+                            </RotateTransform3D.Rotation>
+                        </RotateTransform3D>
+                        <RotateTransform3D x:Name="rotateY" CenterX="0.5" CenterY="0.5" CenterZ="0.5">
+                            <RotateTransform3D.Rotation>
+                                <AxisAngleRotation3D Axis="0 1 0" Angle="0"/>
+                            </RotateTransform3D.Rotation>
+                        </RotateTransform3D>
+                        <RotateTransform3D x:Name="rotateZ" CenterX="0.5" CenterY="0.5" CenterZ="0.5">
+                            <RotateTransform3D.Rotation>
+                                <AxisAngleRotation3D Axis="0 0 1" Angle="0"/>
+                            </RotateTransform3D.Rotation>
+                        </RotateTransform3D>
+                    </Transform3DGroup>
+                </ModelVisual3D.Transform>
+            </ModelVisual3D>
+        </Viewport3D>
+
+        <!-- Suwak do rotacji wokół osi X -->
+        <Slider Height="23" HorizontalAlignment="Left" 
+         Margin="12,12,0,0" Name="sliderX"
+         VerticalAlignment="Top" Width="187" 
+         Maximum="360" Minimum="0"
+         Value="{Binding ElementName=rotateX, Path=Rotation.Angle}" />
+
+        <!-- Suwak do rotacji wokół osi Y -->
+        <Slider Height="23" HorizontalAlignment="Left" 
+         Margin="12,50,0,0" Name="sliderY"
+         VerticalAlignment="Top" Width="187" 
+         Maximum="360" Minimum="0" 
+         Value="{Binding ElementName=rotateY, Path=Rotation.Angle}" />
+
+        <!-- Suwak do rotacji wokół osi Z -->
+        <Slider Height="23" HorizontalAlignment="Left" 
+         Margin="12,100,0,0" Name="sliderZ"
+         VerticalAlignment="Top" Width="187" 
+         Maximum="360" Minimum="0" 
+         Value="{Binding ElementName=rotateZ, Path=Rotation.Angle}" />
+
+    </Grid>
+</Window>

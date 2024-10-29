@@ -5,8 +5,6 @@ using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
 using Gk_01.Views;
 using Microsoft.Win32;
-using System.IO;
-using System.IO.Compression;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -25,8 +23,8 @@ namespace Gk_01.ViewModels
         private int p1_x;
         private int p1_y;
         private int lineThickness = 1;
-        private Color selectedLineColor = Colors.Black;
-        private Color selectedFillColor = Colors.Transparent;
+        private SolidColorBrush selectedLineColor = Brushes.Black;
+        private SolidColorBrush selectedFillColor = Brushes.Transparent;
         private Point? firstClickPoint;
         private ShapeTypeEnum? _currentShapeType;
         private CustomPath? _currentShape;
@@ -50,8 +48,7 @@ namespace Gk_01.ViewModels
         private double zoomMin = 0.5;
         private double zoomSpeed = 0.001;
         private double zoom = 1;
-        //private double _currentZoom = 1.0;
-        // private const double zoomStep = 0.1;
+
         private Cursor _canvasCursor = Cursors.Cross;
         private readonly IFileService _fileService;
         private readonly IDrawingService _drawingService;
@@ -96,6 +93,129 @@ namespace Gk_01.ViewModels
             CanvasRenderTransform.Children.Add(_translateTransform);
         }
 
+        private void SaveFile(object parameter)
+        {
+            if (_currentImage != null)
+            {
+                Dictionary<FileType, string> fileTypeDictionary = new Dictionary<FileType, string>
+                {
+                    { FileType.PPM_P3, "PPM P3 files (*.ppm)|*.ppm" },
+                    { FileType.PPM_P6, "PPM P6 files (*.ppm)|*.ppm" },
+                    { FileType.JPEG, "JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg" }
+                };
+                SaveFileDialog saveFileDialog = new SaveFileDialog()
+                {
+                    Title = "Zapisz jako",
+                    Filter = string.Join("|", fileTypeDictionary.Values),
+                    FilterIndex = 1 // default 
+                };
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    try
+                    {
+                        var filePath = saveFileDialog.FileName;
+                        var fileType = fileTypeDictionary.ElementAt(saveFileDialog.FilterIndex - 1).Key;
+                        int? compressionLevel = null;
+                        if (fileType == FileType.JPEG)
+                        {
+                            SelectCompressionLevelDialog optionDialog = new SelectCompressionLevelDialog();
+                            var viewModel = optionDialog.DataContext as SelectCompressionLevelDialogViewModel;
+                            if (optionDialog.ShowDialog() == true && viewModel != null)
+                                compressionLevel = viewModel.SelectedOption;
+                        }
+                        _fileService.SaveImage(_currentImage, filePath, fileType, compressionLevel);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Wystąpił błąd: {ex.Message}",
+                           "Błąd zapisu pliku graficznego",
+                           MessageBoxButton.OK,
+                           MessageBoxImage.Error);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show($"Płótno nie zawiera żadnych obrazów",
+                                "",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+            }
+        }
+
+        private async void LoadGraphicFile(object parameter)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Otwórz plik graficzny",
+                Filter = "PPM files (*.ppm)|*.ppm|JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg",
+                Multiselect = false
+            };
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string filePath = openFileDialog.FileName;
+                    var image = await _fileService.LoadImage(filePath);
+                    _currentImage = image;
+                    _drawingService.ClearCanvas();
+                    _canvas!.Children.Add(image);
+                    imageDefaultLeft = 0;
+                    imageDefaultTop = 0;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Wystąpił błąd: {ex.Message}",
+                       "Błąd wczytywania pliku graficznego",
+                       MessageBoxButton.OK,
+                       MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void CanvasMouseWheel(object parameter)
+        {
+            if (parameter is MouseWheelEventArgs e)
+            {
+                double newZoom = zoom + zoomSpeed * e.Delta;
+                if (newZoom < zoomMin) newZoom = zoomMin;
+                if (newZoom > zoomMax) newZoom = zoomMax;
+
+                Point mouseCanvasPos = e.GetPosition(_canvas);
+
+                foreach (UIElement child in _canvas!.Children)
+                {
+                    if (child is Image image)
+                    {
+                        TransformGroup transformGroup;
+                        if (image.RenderTransform is TransformGroup existingTransformGroup)
+                        {
+                            transformGroup = existingTransformGroup;
+                        }
+                        else
+                        {
+                            transformGroup = new TransformGroup();
+                            transformGroup.Children.Add(new ScaleTransform(1, 1));
+                            transformGroup.Children.Add(new TranslateTransform(0, 0));
+                            image.RenderTransform = transformGroup;
+                        }
+
+                        var scaleTransform = (ScaleTransform)transformGroup.Children[0];
+                        var translateTransform = (TranslateTransform)transformGroup.Children[1];
+
+                        double scaleFactor = newZoom / zoom;
+
+                        scaleTransform.ScaleX = newZoom;
+                        scaleTransform.ScaleY = newZoom;
+
+                        translateTransform.X = (mouseCanvasPos.X - translateTransform.X) * (1 - scaleFactor) + translateTransform.X;
+                        translateTransform.Y = (mouseCanvasPos.Y - translateTransform.Y) * (1 - scaleFactor) + translateTransform.Y;
+                    }
+                }
+                zoom = newZoom;
+            }
+        }
+
         private void DrawShapeHandler(object parameter)
         {
             if (_currentShapeType is not null)
@@ -104,8 +224,8 @@ namespace Gk_01.ViewModels
                         shapeType: _currentShapeType,
                         startPoint: new Point(p0_x, p0_y),
                         endPoint: new Point(p1_x, p1_y),
-                        lineColor: selectedLineColor,
-                        fillColor: selectedFillColor,
+                        lineColor: selectedLineColor.Color,
+                        fillColor: selectedFillColor.Color,
                         lineThickness: lineThickness);
                 _currentShapeType = null;
                 _isSaved = false;
@@ -123,8 +243,8 @@ namespace Gk_01.ViewModels
                     shapeType: _currentShapeType,
                     startPoint: (Point)firstClickPoint,
                     endPoint: secondClickPoint,
-                    lineColor: selectedLineColor,
-                    fillColor: selectedFillColor,
+                    lineColor: selectedLineColor.Color,
+                    fillColor: selectedFillColor.Color,
                     lineThickness: lineThickness);
                 _currentShapeType = null;
                 firstClickPoint = null;
@@ -154,7 +274,7 @@ namespace Gk_01.ViewModels
                 {
                     // Set previous shape color to default color
                     if (_currentShape != null)
-                        _currentShape.Stroke = new SolidColorBrush(selectedLineColor);
+                        _currentShape.Stroke = selectedLineColor;
 
                     _currentShape = shapePath;
                     LoadClickedShapeInfoAndChangeColor(shapePath);
@@ -173,8 +293,8 @@ namespace Gk_01.ViewModels
             P0_Y = (int)_currentShape!.StartPoint.Y;
             P1_X = (int)_currentShape!.EndPoint.X;
             P1_Y = (int)_currentShape!.EndPoint.Y;
-            SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke).Color;
-            SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill).Color;
+            SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke);
+            SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill);
             LineThickness = (int)_currentShape!.StrokeThickness;
 
             // Set clicked shape color
@@ -319,7 +439,7 @@ namespace Gk_01.ViewModels
 
         private void SetShapeDefaultAppearance()
         {
-            _currentShape!.Stroke = new SolidColorBrush(selectedLineColor);
+            _currentShape!.Stroke = selectedLineColor;
             _currentShape = null;
         }
 
@@ -372,8 +492,8 @@ namespace Gk_01.ViewModels
             P1_X = 0;
             P1_Y = 0;
             LineThickness = 1;
-            SelectedLineColor = Colors.Black;
-            SelectedFillColor = Colors.Transparent;
+            SelectedLineColor = Brushes.Black;
+            SelectedFillColor = Brushes.Transparent;
             firstClickPoint = null;
             _currentShapeType = null;
             _currentShape = null;
@@ -383,65 +503,7 @@ namespace Gk_01.ViewModels
             _isSaved = true;
         }
 
-        private void SaveFile(object parameter)
-        {
-            if (_currentImage != null)
-            {
-                Dictionary<FileType, string> fileTypeDictionary = new Dictionary<FileType, string>
-                {
-                    { FileType.PPM_P3, "PPM P3 files (*.ppm)|*.ppm" },
-                    { FileType.PPM_P6, "PPM P6 files (*.ppm)|*.ppm" },
-                    { FileType.JPEG, "JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg" }
-                };
-                SaveFileDialog saveFileDialog = new SaveFileDialog()
-                {
-                    Title = "Zapisz jako",
-                    Filter = string.Join("|", fileTypeDictionary.Values),
-                    FilterIndex = 1 // default 
-                };
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    var filePath = saveFileDialog.FileName;
-                    var fileType = fileTypeDictionary.ElementAt(saveFileDialog.FilterIndex - 1).Key;
-                    int? compressionLevel = null;
-                    if(fileType == FileType.JPEG)
-                    {
-                        SelectCompressionLevelDialog optionDialog = new SelectCompressionLevelDialog();
-                        var viewModel = optionDialog.DataContext as SelectCompressionLevelDialogViewModel;
-                        if (optionDialog.ShowDialog() == true && viewModel != null)
-                            compressionLevel = viewModel.SelectedOption;
-                    }
-                    _fileService.SaveImage(_currentImage, filePath, fileType, compressionLevel);
-                }
-            }
-            else
-            {
-                MessageBox.Show($"Płótno nie zawiera żadnych obrazów",
-                                "",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
-            }
-        }
-
-        private async void LoadGraphicFile(object parameter)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Title = "Otwórz plik graficzny",
-                Filter = "PPM files (*.ppm)|*.ppm|JPEG files (*.jpeg;*.jpg)|*.jpeg;*.jpg|All files (*.*)|*.*",
-                Multiselect = false
-            };
-            if (openFileDialog.ShowDialog() == true)
-            {
-                string filePath = openFileDialog.FileName;
-                var image = await _fileService.LoadImage(filePath);
-                _currentImage = image;
-                _drawingService.ClearCanvas();
-                _canvas!.Children.Add(image);
-                imageDefaultLeft = 0;
-                imageDefaultTop = 0;
-            }
-        }
+        
 
         private void DeserializeObjects(object parameter)
         {
@@ -518,33 +580,6 @@ namespace Gk_01.ViewModels
             CanvasCursor = Cursors.SizeAll;
         }
 
-        private void CanvasMouseWheel(object parameter)
-        {
-            if (parameter is MouseWheelEventArgs e)
-            {
-                zoom += zoomSpeed * e.Delta;
-                if (zoom < zoomMin) { zoom = zoomMin; }
-                if (zoom > zoomMax) { zoom = zoomMax; }
-
-                Point mousePos = e.GetPosition(_canvas);
-
-                Transform transform;
-                if (zoom > 1)
-                {
-                    transform = new ScaleTransform(zoom, zoom, mousePos.X, mousePos.Y);
-                }
-                else
-                {
-                    transform = new ScaleTransform(zoom, zoom);
-                }
-                foreach (UIElement child in _canvas.Children)
-                {
-                    child.RenderTransform = transform;
-                }
-
-            }
-        }
-
 
         public TransformGroup CanvasRenderTransform
         {
@@ -555,25 +590,25 @@ namespace Gk_01.ViewModels
                 OnPropertyChanged();
             }
         }
-        public Color SelectedLineColor
+        public SolidColorBrush SelectedLineColor
         {
             get { return selectedLineColor; }
             set
             {
                 selectedLineColor = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.Stroke = new SolidColorBrush(selectedLineColor);
+                if (_currentShape != null) _currentShape.Stroke = selectedLineColor;
             }
         }
 
-        public Color SelectedFillColor
+        public SolidColorBrush SelectedFillColor
         {
             get { return selectedFillColor; }
             set
             {
                 selectedFillColor = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.Fill = new SolidColorBrush(selectedFillColor);
+                if (_currentShape != null) _currentShape.Fill = selectedFillColor;
             }
         }
 

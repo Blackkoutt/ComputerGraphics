@@ -1,0 +1,239 @@
+﻿<UserControl x:Class="Gk_01.Controls.ColorPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Gk_01.Controls"
+             mc:Ignorable="d" 
+             d:Width="420" d:Height="450">
+    <Grid>
+        <Button x:Name="ColorBlock"
+             BorderThickness="1"
+             Cursor="Hand"
+             Click="ColorBlock_Click">
+            <Button.Background>
+                <Binding Path="SelectedColor" />
+            </Button.Background>
+        </Button>
+
+        <Popup x:Name="ColorPopup" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+            <Border
+                    BorderBrush="{StaticResource overlay_border}"
+                    Background="{StaticResource overlay_background}"
+                    BorderThickness="2">
+                <Grid x:Name="ColorPanel" Margin="10" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Gradient do wyboru koloru -->
+                    <Canvas Grid.Row="0" Grid.Column="0" Height="200"
+                          Margin="5"
+                          MouseMove="SaturationGradient_MouseMove"
+                          MouseDown="SaturationGradient_MouseDown"
+                          MouseUp="SaturationGradient_MouseUp">
+
+                        <!-- Poziomy gradient nasycenia -->
+                        <Rectangle x:Name="SaturationGradient"
+                                Width="296" Height="200"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="White" Offset="0.0" />
+                                    <GradientStop x:Name="SecondGradientColor" Color="Green" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <!-- Pionowy gradient koloru -->
+                        <Rectangle x:Name="ColorGradientOverlay"
+                                    Width="296" Height="200"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="Transparent" Offset="0.0" />
+                                    <GradientStop Color="Black" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
+                        <!-- Wskaźnik wyboru koloru -->
+                        <Ellipse x:Name="ColorPickerIndicator"
+                                  Width="10" Height="10"
+                                  ClipToBounds="True"
+                                  Fill="Black"
+                                  Stroke="White"
+                                  StrokeThickness="2">
+                            <Ellipse.RenderTransform>
+                                <TranslateTransform x:Name="IndicatorPosition" />
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                    </Canvas>
+
+                    <Grid x:Name="ColorSpectrumContainer" Width="50" Height="200" Margin="10" Grid.Row="0" Grid.Column="1">
+                        <!-- Rectangle jako tło z gradientem -->
+                        <Rectangle x:Name="ColorSpectrum"
+                              Width="30" Height="200"
+                              >
+                        </Rectangle>
+
+                        <!-- Slider do wyboru koloru -->
+                        <Slider x:Name="ColorSlider" 
+                            Minimum="0" 
+                            Maximum="1" 
+                            VerticalAlignment="Bottom" 
+                            Margin="0,0,0,0" 
+                            Orientation="Vertical"
+                            HorizontalAlignment="Center"
+                            Height="200"
+                            ValueChanged="ColorSlider_ValueChanged">
+                            <Slider.Template>
+                                <ControlTemplate TargetType="Slider">
+                                    <Grid>
+                                        <Track Name="PART_Track"
+                                           IsDirectionReversed="False"
+                                           IsEnabled="{TemplateBinding IsEnabled}">
+                                            <Track.Thumb>
+                                                <Thumb Width="30" Height="7"/>
+                                                <!-- Zwiększona szerokość i wysokość suwaka -->
+                                            </Track.Thumb>
+                                        </Track>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Slider.Template>
+                        </Slider>
+                    </Grid>
+
+                    <!-- Pole na kod heksadecymalny -->
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Border Width="200" Height="30" Margin="0,0,10,0">
+                            <Border.Background>
+                                <Binding Path="SelectedColor" />
+                            </Border.Background>
+                        </Border>
+                        <TextBox Width="100" IsEnabled="False" Padding="10,2,10,2" Name="HexColorBox" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="Bold" FontSize="14">
+                            <TextBox.Text>
+                                <Binding Path="HexColorValue" />
+                            </TextBox.Text>
+                        </TextBox>
+                    </StackPanel>
+
+                    <!-- Suwaki RGB -->
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Vertical" Margin="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!--RGB-->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="R:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="RedSlider" Minimum="0" Maximum="255" Value="{Binding RValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" Width="100"/>
+                            </StackPanel>
+                            <local:InputTypeNumber Margin="0,5,0,5" MaxValue="255" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               Grid.Row="0" Grid.Column="1" VerticalContentAlignment="Center"
+                                               InputValue="{Binding RValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="G:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="GreenSlider" Minimum="0" Maximum="255" Width="100" Value="{Binding GValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="255" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               Grid.Row="1" Grid.Column="1" VerticalContentAlignment="Center"
+                                               InputValue="{Binding GValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+
+                            <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="B:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="BlueSlider" Minimum="0" Maximum="255" Width="100" Value="{Binding BValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="255" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               Grid.Row="2" Grid.Column="1" VerticalContentAlignment="Center"
+                                               InputValue="{Binding BValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,5,0,5">
+                                <TextBlock Text="A:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="AlphaSlider" Minimum="0" Maximum="100" Width="100" Value="{Binding AValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="255" Grid.Row="3" Grid.Column="1" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               VerticalContentAlignment="Center"
+                                               InputValue="{Binding AValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+
+                            <!--CMYK-->
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="12,5,0,5">
+                                <TextBlock Text="C:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="CyanSlider" Minimum="0" Maximum="100"  Width="100" Value="{Binding CValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="100" Grid.Row="0" Grid.Column="3" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               VerticalContentAlignment="Center"
+                                               InputValue="{Binding CValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+                            <Label Grid.Row="0" Grid.Column="4" FontWeight="Bold" FontSize="14">%</Label>
+
+                            <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="12,5,0,5">
+                                <TextBlock Text="M:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="MagentaSlider" Minimum="0" Maximum="100" Width="100" Value="{Binding MValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber  MaxValue="100" Grid.Row="1" Grid.Column="3" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               VerticalContentAlignment="Center"
+                                               InputValue="{Binding MValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+                            <Label Grid.Row="1" Grid.Column="4" FontWeight="Bold" FontSize="14">%</Label>
+
+                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="12,5,0,5">
+                                <TextBlock Text="Y:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="YellowSlider" Minimum="0" Maximum="100" Width="100" Value="{Binding YValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="100" Grid.Row="2" Grid.Column="3" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               VerticalContentAlignment="Center"
+                                               InputValue="{Binding YValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+                            <Label Grid.Row="2" Grid.Column="4" FontWeight="Bold" FontSize="14">%</Label>
+
+                            <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Margin="12,5,0,5">
+                                <TextBlock Text="K:" Width="20" FontWeight="Bold" FontSize="14"/>
+                                <Slider Name="BlackSlider" Minimum="0" Maximum="100" Width="100" Value="{Binding KValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}" />
+                            </StackPanel>
+                            <local:InputTypeNumber MaxValue="100" Grid.Row="3" Grid.Column="3" Margin="0,5,0,5" Width="55" Foreground="{StaticResource ResourceKey=black}"
+                                               VerticalContentAlignment="Center"
+                                               InputValue="{Binding KValue, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                               Background="Transparent" BorderThickness="0,0,0,1"/>
+                            <Label Grid.Row="3" Grid.Column="4" FontWeight="Bold" FontSize="14">%</Label>
+
+                        </Grid>
+                    </StackPanel>
+                    <Button Grid.Row="3"
+                            Grid.ColumnSpan="2"
+                            Width="100"
+                            Margin="0,5,0,0"
+                            Padding="0,2,0,2"
+                            Click="Button_Click">
+                        Stożek HSL
+                    </Button>
+                </Grid>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

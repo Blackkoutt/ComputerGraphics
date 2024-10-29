@@ -28,7 +28,7 @@ namespace Gk_01.Helpers.GraphicFileLoaders
 
             if (compressionLevel == null) compressionLevel = 0;
             int quality = 100 - (int)compressionLevel;
-
+            if (quality == 0) quality = 1;
             var jpegEncoder = new JpegBitmapEncoder();
             jpegEncoder.QualityLevel = quality;
 

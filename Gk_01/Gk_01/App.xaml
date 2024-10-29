@@ -15,6 +15,10 @@
             <DataTemplate DataType="{x:Type view_models:MainWindowViewModel}">
                 <views:MainWindow/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type view_models:RGBCubeViewModel}">
+                <views:RGBCubeWindow/>
+            </DataTemplate>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

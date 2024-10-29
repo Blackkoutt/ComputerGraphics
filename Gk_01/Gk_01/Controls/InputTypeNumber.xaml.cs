@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,7 +48,7 @@ namespace Gk_01.Controls
 
         private void AutoIncrementTimer_Tick(object? sender, EventArgs e)
         {
-            if (_isButtonUpPressed)
+            if (_isButtonUpPressed && InputValue < MaxValue)
                 InputValue += _incrementStep;
 
             else if (_isButtonDownPressed && InputValue > 0)
@@ -59,12 +60,26 @@ namespace Gk_01.Controls
         public static readonly DependencyProperty InputValueProperty =
             DependencyProperty.Register(nameof(InputValue), typeof(int), typeof(InputTypeNumber),
             new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
         public int InputValue
         {
             get { return (int)GetValue(InputValueProperty); }
             set
             {
                 SetValue(InputValueProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty MaxValueProperty =
+           DependencyProperty.Register(nameof(MaxValue), typeof(int), typeof(InputTypeNumber),
+           new FrameworkPropertyMetadata(int.MaxValue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
+        public int MaxValue
+        {
+            get { return (int)GetValue(MaxValueProperty); }
+            set
+            {
+                SetValue(MaxValueProperty, value);
             }
         }
 
@@ -108,7 +123,9 @@ namespace Gk_01.Controls
         {
             if (int.TryParse(InputTypeNumberTextBox.Text, out int value))
             {
-                InputValue = value;
+                if (value > MaxValue) InputValue = MaxValue;
+                else if (value < 0) InputValue = 0;
+                else InputValue = value;
             }
             else
             {
@@ -123,7 +140,10 @@ namespace Gk_01.Controls
 
         private void Button_Up_Click(object sender, RoutedEventArgs e)
         {
-            InputValue += _incrementStep;
+            if (InputValue < MaxValue)
+            {
+                InputValue += _incrementStep;
+            }
         }
     }
 }

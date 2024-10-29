@@ -1,8 +1,4 @@
-﻿using Gk_01.Controls;
-using Gk_01.Helpers.GraphicFileReaders;
-using System;
-using System.CodeDom;
-using System.ComponentModel.Design.Serialization;
+﻿using Gk_01.Helpers.GraphicFileReaders;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -105,18 +101,9 @@ namespace Gk_01.Helpers.GraphicFileLoaders
             const byte maxColor = 255;
 
             int bytesPerPixel = 0;
-            if (bitmapSource.Format == PixelFormats.Bgr32)
-            {
-                bytesPerPixel = 4;
-            }
-            else if (bitmapSource.Format == PixelFormats.Bgr24)
-            {
-                bytesPerPixel = 3;
-            }
-            else
-            {
-                return;
-            }
+            if (bitmapSource.Format == PixelFormats.Bgr32) bytesPerPixel = 4;
+            else if (bitmapSource.Format == PixelFormats.Bgr24) bytesPerPixel = 3;
+            else return;
 
             WriteableBitmap writableBitmap = new WriteableBitmap(bitmapSource);
             writableBitmap.Lock();

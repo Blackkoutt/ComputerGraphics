@@ -10,7 +10,9 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="MainWindow" Height="580" Width="930">
+        xmlns:diagnostics="clr-namespace:System.Diagnostics;assembly=WindowsBase"
+        Title="MainWindow" Height="680" Width="1030"
+        diagnostics:PresentationTraceSources.TraceLevel="High">
     <DockPanel>
         <Menu DockPanel.Dock="Top" FontSize="13" Padding="3">
             <MenuItem Header="Plik">
@@ -52,19 +54,18 @@
                 <RadioButton Margin="10" Command="{Binding CanvasMoveCommand}" CommandParameter="Line" Grid.Row="1" Grid.Column="1" Style="{StaticResource ResourceKey=menuButton}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center">
                     <fa5:ImageAwesome Icon="Solid_ArrowsAlt" Width="20" Height="20"/>
                 </RadioButton>
-                <Grid Grid.ColumnSpan="3" Grid.Row="2" Margin="7,5,7,5">
+                <Grid Grid.ColumnSpan="3" Grid.Row="2" Margin="7,10,7,10">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="45.4"/>
-                        <ColumnDefinition Width="4.6"/>
+                        <ColumnDefinition Width="50"/>
                     </Grid.ColumnDefinitions>
                     <Label Grid.Row="0" Grid.Column="0" VerticalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">Kolor linii:</Label>
-                    <xctk:ColorPicker Margin="0,3,0,3" Grid.Row="0" Grid.Column="1" SelectedColor="{Binding SelectedLineColor, Mode=TwoWay}" Grid.ColumnSpan="2"></xctk:ColorPicker>
+                    <controls:ColorPicker SelectedColor="{Binding DataContext.SelectedLineColor, Mode=TwoWay, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Margin="5,0,5,0" Grid.Row="0" Grid.Column="1" />
                 </Grid>
-                <Grid Grid.ColumnSpan="3" Grid.Row="3" Margin="7,5,7,5">
+                <Grid Grid.ColumnSpan="3" Grid.Row="3" Margin="7,10,7,10">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
@@ -73,7 +74,7 @@
                         <ColumnDefinition Width="50"/>
                     </Grid.ColumnDefinitions>
                     <Label Grid.Row="0" Grid.Column="0" VerticalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">Kolor wypełnienia:</Label>
-                    <xctk:ColorPicker Margin="0,3,0,3" Grid.Row="0" Grid.Column="1" SelectedColor="{Binding SelectedFillColor, Mode=TwoWay}"></xctk:ColorPicker>
+                    <controls:ColorPicker SelectedColor="{Binding DataContext.SelectedFillColor, Mode=TwoWay, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Margin="5,0,5,0" Grid.Row="0" Grid.Column="1" />
                 </Grid>
                 <Grid Grid.ColumnSpan="3" Grid.Row="4" Margin="7,5,4,5">
                     <Grid.RowDefinitions>
@@ -84,7 +85,7 @@
                         <ColumnDefinition Width="50"/>
                     </Grid.ColumnDefinitions>
                     <Label Grid.Row="1" Grid.Column="0" VerticalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">Grubość linii:</Label>
-                    <controls:InputTypeNumber  VerticalContentAlignment="Center" Grid.Row="1"  Grid.Column="1"  InputValue="{Binding DataContext.LineThickness, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
+                    <controls:InputTypeNumber Foreground="{StaticResource ResourceKey=white}" VerticalContentAlignment="Center" Grid.Row="1"  Grid.Column="1"  InputValue="{Binding DataContext.LineThickness, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
                 </Grid>
                
             </Grid>
@@ -105,16 +106,16 @@
                     <Label Grid.Row="0" Grid.ColumnSpan="2" Margin="10,0,2,0" FontSize="14" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">P0:</Label>
 
                     <Label Grid.Row="1" Grid.Column="0" Margin="10,0,2,0" FontSize="13" Foreground="{StaticResource ResourceKey=white}">X:</Label>
-                    <controls:InputTypeNumber Grid.Row="1" Margin="0,0,10,0" Grid.Column="1"  InputValue="{Binding DataContext.P0_X, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
+                    <controls:InputTypeNumber Foreground="{StaticResource ResourceKey=white}" Grid.Row="1" Margin="0,0,10,0" Grid.Column="1"  InputValue="{Binding DataContext.P0_X, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
                     <Label Grid.Row="1" Grid.Column="2" Margin="10,0,2,0" FontSize="13" Foreground="{StaticResource ResourceKey=white}">Y:</Label>
-                    <controls:InputTypeNumber Grid.Row="1" Margin="0,0,10,0" Grid.Column="3"  InputValue="{Binding DataContext.P0_Y, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
+                    <controls:InputTypeNumber Foreground="{StaticResource ResourceKey=white}" Grid.Row="1" Margin="0,0,10,0" Grid.Column="3"  InputValue="{Binding DataContext.P0_Y, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
 
                     <Label Grid.Row="2" Grid.ColumnSpan="2" Margin="10,8,2,0" FontSize="14" FontWeight="Bold" Foreground="{StaticResource ResourceKey=white}">P1:</Label>
 
                     <Label Grid.Row="3" Grid.Column="0" Margin="10,0,2,0" FontSize="13" Foreground="{StaticResource ResourceKey=white}">X:</Label>
-                    <controls:InputTypeNumber Grid.Row="3" Margin="0,0,10,0" Grid.Column="1"  InputValue="{Binding DataContext.P1_X, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
+                    <controls:InputTypeNumber Foreground="{StaticResource ResourceKey=white}" Grid.Row="3" Margin="0,0,10,0" Grid.Column="1"  InputValue="{Binding DataContext.P1_X, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
                     <Label Grid.Row="3" Grid.Column="2" Margin="10,0,2,0" FontSize="13" Foreground="{StaticResource ResourceKey=white}">Y:</Label>
-                    <controls:InputTypeNumber Grid.Row="3" Margin="0,0,10,0" Grid.Column="3"  InputValue="{Binding DataContext.P1_Y, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
+                    <controls:InputTypeNumber Foreground="{StaticResource ResourceKey=white}" Grid.Row="3" Margin="0,0,10,0" Grid.Column="3"  InputValue="{Binding DataContext.P1_Y, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Background="Transparent" BorderThickness="0,0,0,1"/>
                 </Grid>
             </Border>
 
