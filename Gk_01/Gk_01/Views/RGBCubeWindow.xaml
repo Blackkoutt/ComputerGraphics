@@ -5,19 +5,35 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Gk_01.Views"
         mc:Ignorable="d"
-        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-        Title="RGBCubeWindow" Height="450" Width="800">
+        xmlns:mvvm="http://www.galasoft.ch/mvvmlight"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        Title="RGBCubeWindow" Height="650" Width="900">
         <i:Interaction.Triggers>
             <i:EventTrigger EventName="Loaded">
                 <i:InvokeCommandAction Command="{Binding LoadedCommand}" />
             </i:EventTrigger>
         </i:Interaction.Triggers>
     <Grid>
-        <Viewport3D Name="viewport">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Viewport3D Name="viewportCube" Grid.RowSpan="3" Grid.Column="1">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="MouseLeftButtonDown">
+                    <mvvm:EventToCommand Command="{Binding ViewPortClickCommand}" PassEventArgsToCommand="True"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             <Viewport3D.Camera>
                 <PerspectiveCamera Position="3 3 3" LookDirection="-1 -1 -1" UpDirection="0 1 0" FieldOfView="45"/>
             </Viewport3D.Camera>
-            <ModelVisual3D x:Name="visualModel">
+            <ModelVisual3D x:Name="visualModelCube">
                 <ModelVisual3D.Content>
                     <Model3DGroup>
                         <!-- Światło ambientowe dla równomiernego oświetlenia -->
@@ -53,25 +69,142 @@
         </Viewport3D>
 
         <!-- Suwak do rotacji wokół osi X -->
-        <Slider Height="23" HorizontalAlignment="Left" 
-         Margin="12,12,0,0" Name="sliderX"
-         VerticalAlignment="Top" Width="187" 
-         Maximum="360" Minimum="0"
-         Value="{Binding ElementName=rotateX, Path=Rotation.Angle}" />
+        <StackPanel Grid.Column="0" Width="232.5">
+            <GroupBox Header="Obrót kostki">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">X:</Label>
+                        <Slider Height="23"
+                         Margin="12,10,0,0" Name="sliderX" Width="150" 
+                         Maximum="360" Minimum="0"
+                         Value="{Binding ElementName=rotateX, Path=Rotation.Angle}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding ElementName=rotateX, Path=Rotation.Angle}" IsEnabled="False"/>
+                    </StackPanel>
 
-        <!-- Suwak do rotacji wokół osi Y -->
-        <Slider Height="23" HorizontalAlignment="Left" 
-         Margin="12,50,0,0" Name="sliderY"
-         VerticalAlignment="Top" Width="187" 
-         Maximum="360" Minimum="0" 
-         Value="{Binding ElementName=rotateY, Path=Rotation.Angle}" />
+                    <!-- Suwak do rotacji wokół osi Y -->
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">Y:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                          Margin="12,10,0,0" Name="sliderY"
+                          VerticalAlignment="Top" Width="150" 
+                          Maximum="360" Minimum="0" 
+                          Value="{Binding ElementName=rotateY, Path=Rotation.Angle}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding ElementName=rotateY, Path=Rotation.Angle}" IsEnabled="False"/>
+                    </StackPanel>
 
-        <!-- Suwak do rotacji wokół osi Z -->
-        <Slider Height="23" HorizontalAlignment="Left" 
-         Margin="12,100,0,0" Name="sliderZ"
-         VerticalAlignment="Top" Width="187" 
-         Maximum="360" Minimum="0" 
-         Value="{Binding ElementName=rotateZ, Path=Rotation.Angle}" />
+                    <!-- Suwak do rotacji wokół osi Z -->
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">Z:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                         Margin="12,10,0,0" Name="sliderZ"
+                         VerticalAlignment="Top" Width="150" 
+                         Maximum="360" Minimum="0" 
+                         Value="{Binding ElementName=rotateZ, Path=Rotation.Angle}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding ElementName=rotateZ, Path=Rotation.Angle}" IsEnabled="False"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
 
+        <StackPanel Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Width="225" >
+            <GroupBox Header="Punkt P1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">R:</Label>
+                        <Slider Height="23"
+                        Margin="12,10,0,0" Width="150" 
+                        Maximum="255" Minimum="0"
+                        Value="{Binding RRValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding RRValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">G:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                        Margin="12,10,0,0"
+                        VerticalAlignment="Top" Width="150" 
+                        Maximum="255" Minimum="0" 
+                        Value="{Binding RGValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding RGValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">B:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                           Margin="12,10,0,0"
+                           VerticalAlignment="Top" Width="150" 
+                           Maximum="255" Minimum="0" 
+                           Value="{Binding RBValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding RBValue}" IsEnabled="False"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Header="Punkt P2">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">R:</Label>
+                        <Slider Height="23"
+                        Margin="12,10,0,0" Width="150" 
+                        Maximum="255" Minimum="0"
+                        Value="{Binding GRValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding GRValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">G:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                        Margin="12,10,0,0"
+                        VerticalAlignment="Top" Width="150" 
+                        Maximum="255" Minimum="0" 
+                        Value="{Binding GGValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding GGValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">B:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                        Margin="12,10,0,0"
+                        VerticalAlignment="Top" Width="150" 
+                        Maximum="255" Minimum="0" 
+                        Value="{Binding GBValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding GBValue}" IsEnabled="False"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Header="Punkt P3">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">R:</Label>
+                        <Slider Height="23"
+                        Margin="12,10,0,0" Width="150" 
+                        Maximum="255" Minimum="0"
+                        Value="{Binding BRValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding BRValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">G:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                       Margin="12,10,0,0"
+                       VerticalAlignment="Top" Width="150" 
+                       Maximum="255" Minimum="0" 
+                       Value="{Binding BGValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding BGValue}" IsEnabled="False"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Label VerticalContentAlignment="Center">B:</Label>
+                        <Slider Height="23" HorizontalAlignment="Left" 
+                           Margin="12,10,0,0"
+                           VerticalAlignment="Top" Width="150" 
+                           Maximum="255" Minimum="0" 
+                           Value="{Binding BBValue}" />
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Margin="5,0,0,0" Text="{Binding BBValue}" IsEnabled="False"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+        </StackPanel>
+        <Canvas x:Name="canvas" Grid.Row="2" Grid.Column="2"></Canvas>
     </Grid>
 </Window>

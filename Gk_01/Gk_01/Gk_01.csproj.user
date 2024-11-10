@@ -13,6 +13,12 @@
     <Compile Update="Controls\InputTypeNumber.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\CustomFilterDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\ImagePointProcessingDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\RGBCubeWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -25,6 +31,12 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Controls\InputTypeNumber.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\CustomFilterDialog.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\ImagePointProcessingDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\MainWindow.xaml">

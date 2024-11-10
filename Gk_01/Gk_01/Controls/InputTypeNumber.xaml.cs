@@ -51,7 +51,7 @@ namespace Gk_01.Controls
             if (_isButtonUpPressed && InputValue < MaxValue)
                 InputValue += _incrementStep;
 
-            else if (_isButtonDownPressed && InputValue > 0)
+            else if (_isButtonDownPressed && InputValue > MinValue)
                 InputValue -= _incrementStep;
         }
 
@@ -80,6 +80,19 @@ namespace Gk_01.Controls
             set
             {
                 SetValue(MaxValueProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty MinValueProperty =
+          DependencyProperty.Register(nameof(MinValue), typeof(int), typeof(InputTypeNumber),
+          new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
+        public int MinValue
+        {
+            get { return (int)GetValue(MinValueProperty); }
+            set
+            {
+                SetValue(MinValueProperty, value);
             }
         }
 
@@ -124,7 +137,7 @@ namespace Gk_01.Controls
             if (int.TryParse(InputTypeNumberTextBox.Text, out int value))
             {
                 if (value > MaxValue) InputValue = MaxValue;
-                else if (value < 0) InputValue = 0;
+                else if (value < MinValue) InputValue = MinValue;
                 else InputValue = value;
             }
             else
@@ -135,7 +148,7 @@ namespace Gk_01.Controls
 
         private void Button_Down_Click(object sender, RoutedEventArgs e)
         {
-           if ( InputValue > 0) InputValue -= _incrementStep;
+           if ( InputValue > MinValue) InputValue -= _incrementStep;
         }
 
         private void Button_Up_Click(object sender, RoutedEventArgs e)

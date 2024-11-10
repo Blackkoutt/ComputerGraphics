@@ -14,6 +14,7 @@ namespace Gk_01.Views
             var viewModel = MainWindowViewModel.Instance;
             DataContext = viewModel;
             viewModel.Canvas = mainCanvas;
+            viewModel.OnInit();
         }
     }
 }

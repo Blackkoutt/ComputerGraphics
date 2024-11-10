@@ -1,14 +1,20 @@
 ﻿using Gk_01.DI;
 using Gk_01.Enums;
+using Gk_01.Handlers;
+using Gk_01.Helpers.ImagePointProcessing;
+using Gk_01.Helpers.ImageProcessors.ImageFilters;
+using Gk_01.Helpers.ImageProcessors.ImagePointProcessors;
 using Gk_01.Models;
 using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
 using Gk_01.Views;
 using Microsoft.Win32;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Unity;
 
 namespace Gk_01.ViewModels
@@ -16,8 +22,13 @@ namespace Gk_01.ViewModels
     public class MainWindowViewModel : BaseViewModel
     {
         private static MainWindowViewModel? _instance = null;
+        private ImagePointProcessingHandler _imagePointProcessingHandler;
         private Canvas? _canvas;
         private Image? _currentImage;
+        private Image? _defaultImage;
+        private Stack<Image> imageProcessingUndoStack = [];
+        private readonly int maxUndoOperations = 5;
+        private Stack<Image> imageProcessingRedoStack = [];
         private int p0_x;
         private int p0_y;
         private int p1_x;
@@ -67,6 +78,30 @@ namespace Gk_01.ViewModels
         public ICommand CanvasPaintCommand { get; set; }
         public ICommand SaveFileCommand { get; set; }
 
+
+        // Image points processing
+        public ICommand ImageAdditionCommand { get; set; }
+        public ICommand ImageSubtractionCommand { get; set; }
+        public ICommand ImageMultiplicationCommand { get; set; }
+        public ICommand ImageDivisionCommand { get; set; }
+        public ICommand ImageChangeBrightnessCommand { get; set; }
+        public ICommand ImageGrayscaleAverageMethodCommand { get; set; }
+        public ICommand ImageGrayscaleLuminosityMethodCommand { get; set; }
+
+
+        // Image filters
+        public ICommand FilterAverageCommand { get; set; }
+        public ICommand FilterMedianCommand { get; set; }
+        public ICommand FilterVerticalSobelCommand { get; set; }
+        public ICommand FilterHorizontalSobelCommand { get; set; }
+        public ICommand FilterHighPassCommand { get; set; }
+        public ICommand FilterGaussianCommand { get; set; }
+        public ICommand FilterCustomCommand { get; set; }
+
+        // Undo Redo
+        public ICommand UndoCommand { get; set; }
+        public ICommand RedoCommand { get; set; }
+
         public MainWindowViewModel(IFileService fileService, IDrawingService drawingService)
         {
             ChangeDrawingShapeCommand = new RelayCommand(ChangeDrawingShape);
@@ -83,6 +118,55 @@ namespace Gk_01.ViewModels
             CanvasMoveCommand = new RelayCommand(CanvasMove);
             CanvasPaintCommand = new RelayCommand(CanvasPaint);
             SaveFileCommand = new RelayCommand(SaveFile);
+            UndoCommand = new RelayCommand(Undo);
+            RedoCommand = new RelayCommand(Redo);
+
+            // Image points processing
+            ImageAdditionCommand = SetImageProcessingCommandHandler(
+                                    processor: new AdditionProcessor(),
+                                    isDialog: true,
+                                    title: "Dodawanie",
+                                    labelText: "Wartość składnika: ");
+
+            ImageSubtractionCommand = SetImageProcessingCommandHandler(
+                                    processor: new SubtractionProcessor(),
+                                    isDialog: true,
+                                    title: "Odejmowanie",
+                                    labelText: "Wartość odjemnika: ");
+
+            ImageMultiplicationCommand = SetImageProcessingCommandHandler(
+                                    processor: new MultiplicationProcessor(),
+                                    isDialog: true,
+                                    title: "Mnożenie",
+                                    labelText: "Wartość mnożnika: ");
+
+            ImageDivisionCommand = SetImageProcessingCommandHandler(
+                                    processor: new DivisionProcessor(),
+                                    isDialog: true,
+                                    title: "Dzielenie",
+                                    labelText: "Wartość dzielnika: ");
+
+            ImageChangeBrightnessCommand = SetImageProcessingCommandHandler(
+                                    processor: new BrightnessProcessor(),
+                                    isDialog: true,
+                                    title: "Zmiana jasności",
+                                    labelText: "Wartość piksela: ");
+
+            ImageGrayscaleAverageMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleAverageMethodProcessor());
+            ImageGrayscaleLuminosityMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleLuminosityProcessor());
+            FilterAverageCommand = SetImageProcessingCommandHandler(processor: new AverageFilter());
+            FilterMedianCommand = SetImageProcessingCommandHandler(processor: new MedianFilter(3));
+            FilterVerticalSobelCommand = SetImageProcessingCommandHandler(processor: new VerticalSobelFilter());
+            FilterHorizontalSobelCommand = SetImageProcessingCommandHandler(processor: new HorizontalSobelFilter());
+            FilterHighPassCommand = SetImageProcessingCommandHandler(processor: new HighPassFilter());
+            FilterGaussianCommand = SetImageProcessingCommandHandler(processor: new GaussianFilter());
+
+            FilterCustomCommand = new RelayCommand(param =>
+                                  _imagePointProcessingHandler!.CustomFilter(param,
+                                  defaultImage: _defaultImage,
+                                  currentImage: _currentImage));
+
+            // Image filters
             _fileService = fileService;
             _drawingService = drawingService;
 
@@ -91,6 +175,71 @@ namespace Gk_01.ViewModels
             CanvasRenderTransform = new TransformGroup();
             CanvasRenderTransform.Children.Add(_scaleTransform);
             CanvasRenderTransform.Children.Add(_translateTransform);
+        }
+
+        private RelayCommand SetImageProcessingCommandHandler(ImageProcessor processor, bool isDialog = false, string title = "", string labelText = "")
+        {
+            if (isDialog)
+            {
+                return new RelayCommand(param =>
+                    _imagePointProcessingHandler!.ShowDialog(param,
+                    imageProcessor: processor,
+                    defaultImage: _defaultImage,
+                    currentImage: _currentImage,
+                    title: title,
+                    labelText: labelText
+                ));
+            }
+            else
+            {
+                return new RelayCommand(param =>
+                   _imagePointProcessingHandler!.ProcessImage(param,
+                   imageProcessor: processor,
+                   defaultImage: _defaultImage,
+                   currentImage: _currentImage
+               ));
+            }
+        }
+
+        private void Redo(object parameter)
+        {
+            // TO DO
+        }
+
+        private void Undo(object parameter)
+        {
+            // TO DO
+        }
+
+        public void OnInit()
+        {
+            _imagePointProcessingHandler = ImagePointProcessingHandler.Instance;
+            _imagePointProcessingHandler.Canvas = _canvas;
+            _imagePointProcessingHandler.CloseProcessingDialogEvent += EndImageProcessing;
+            _imagePointProcessingHandler.ProcessedImageEvent += EndImageProcessing;
+        }
+
+        private void EndImageProcessing(object? sender, EventArgs e)
+        {
+            if(_defaultImage != null && _currentImage != null)
+            {
+               /* imageProcessingUndoStack.Push(new Image
+                {
+                    Source = (_defaultImage.Source as BitmapSource)?.Clone()
+                });
+
+                if (imageProcessingUndoStack.Count > maxUndoOperations)
+                {
+                    imageProcessingUndoStack.Reverse();
+                    imageProcessingUndoStack.Pop();
+                    imageProcessingUndoStack.Reverse();
+                }*/
+
+                _defaultImage = new Image
+                {
+                    Source = (_currentImage.Source as BitmapSource)?.Clone()
+                };
+            }
         }
 
         private void SaveFile(object parameter)
@@ -158,6 +307,10 @@ namespace Gk_01.ViewModels
                     string filePath = openFileDialog.FileName;
                     var image = await _fileService.LoadImage(filePath);
                     _currentImage = image;
+                    _defaultImage = new Image
+                    {
+                        Source = (image.Source as BitmapSource)?.Clone()
+                    };
                     _drawingService.ClearCanvas();
                     _canvas!.Children.Add(image);
                     imageDefaultLeft = 0;
@@ -487,6 +640,7 @@ namespace Gk_01.ViewModels
         {
             _drawingService.ClearCanvas();
             _currentImage = null;
+            _defaultImage = null;
             P0_X = 0;
             P0_Y = 0;
             P1_X = 0;
