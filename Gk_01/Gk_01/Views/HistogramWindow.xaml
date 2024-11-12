@@ -1,0 +1,58 @@
+﻿<Window x:Class="Gk_01.Views.HistogramWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gk_01.Views"
+        xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        Title="Histogram" Height="500" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <TabControl Grid.Row="0" Grid.ColumnSpan="3">
+            <TabItem Header="Kanał R">
+                <StackPanel x:Name="rChannelTabView" Margin="50,20,50,20">
+                    <scottplot:WpfPlot Name="redChannelHistogram"  MinHeight="350" />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Kanał G">
+                <StackPanel x:Name="gChannelTabView" Margin="50,20,50,20">
+                    <scottplot:WpfPlot Name="greenChannelHistogram" MinHeight="350"  />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Kanał B">
+                <StackPanel x:Name="bChannelTabView" Margin="50,20,50,20">
+                    <scottplot:WpfPlot Name="blueChannelHistogram" MinHeight="350" />
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        <Button x:Name="BackButton" Grid.Row="1" Grid.Column="0"
+                Command="{Binding UndoHistogramCommand}"
+                VerticalAlignment="Center" Width="90"
+                Height="25" HorizontalAlignment="Right"
+                IsEnabled="False"
+                FontSize="13">Cofnij</Button>
+        <Button Grid.Row="1" Grid.Column="1"
+                Command="{Binding ExpandHistogramCommand}"
+                VerticalAlignment="Center" Width="150"
+                Height="25" HorizontalAlignment="Center"
+                FontSize="13">Rozszerz histogram</Button>
+        <Button Grid.Row="1" Grid.Column="2"
+                Command="{Binding EqualizeHistogramCommand}"
+                VerticalAlignment="Center" Width="150"
+                Height="25" HorizontalAlignment="Left"
+                FontSize="13">Wyrównaj histogram</Button>
+
+    </Grid>
+</Window>

@@ -18,6 +18,9 @@
             <DataTemplate DataType="{x:Type view_models:RGBCubeViewModel}">
                 <views:RGBCubeWindow/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type view_models:HistogramViewModel}">
+                <views:HistogramWindow/>
+            </DataTemplate>
 
         </ResourceDictionary>
     </Application.Resources>

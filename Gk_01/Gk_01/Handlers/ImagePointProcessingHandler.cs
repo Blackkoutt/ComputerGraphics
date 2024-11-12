@@ -1,5 +1,6 @@
 ﻿using Gk_01.Controls;
 using Gk_01.Helpers.ImagePointProcessing;
+using Gk_01.Helpers.ImageProcessors;
 using Gk_01.Helpers.ImageProcessors.ImageFilters;
 using Gk_01.Observable;
 using Gk_01.Views;
@@ -28,9 +29,50 @@ namespace Gk_01.Handlers
         
         private ImagePointProcessingHandler() { }
 
-        public void ShowDialog(object parameter, ImageProcessor imageProcessor, Image? defaultImage, Image? currentImage, string title, string labelText)
+        public void AutoBinarizeImage(object parameter, ImageAutoBinarizationProcessor imageProcessor, Image? defaultImage, Image? currentImage)
         {
-            value = 0;
+            if (_canvas == null)
+            {
+                MessageBox.Show($"Przekształcenie nie ma dostępu do elementu canvas.",
+                "Błąd przekształceń",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+                return;
+            }
+            if (currentImage == null || defaultImage == null)
+            {
+                MessageBox.Show($"Płótno nie zawiera żadnych obrazów",
+                "",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+                return;
+            }
+            _defaultImage = defaultImage;
+            _currentImage = currentImage;
+            _imageProcessor = imageProcessor;
+            if (processingDialog != null)
+            {
+                processingDialog.Close();
+                processingDialog = null;
+            }
+            if (customFilterDialog != null)
+            {
+                customFilterDialog.Close();
+                customFilterDialog = null;
+            }
+            imageProcessor!.ProcessImage(
+                currentImage: _currentImage!,
+                defaultImage: _defaultImage!);
+
+            int threshold = imageProcessor.Threshold;
+            MessageBox.Show($"Wyznaczona wartość progowa: {threshold}",
+                "Wartość progowa",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        public void ShowDialog(object parameter, ImageProcessor imageProcessor, Image? defaultImage, Image? currentImage, string title, string labelText, int minValue = int.MinValue, int maxValue = int.MaxValue, int defaultValue = 0)
+        {
+            value = defaultValue;
             if (_canvas == null)
             {
                 MessageBox.Show($"Przekształcenie nie ma dostępu do elementu canvas.",
@@ -61,6 +103,8 @@ namespace Gk_01.Handlers
                 customFilterDialog = null;
             }
             processingDialog = new ImagePointProcessingDialog(title, labelText);
+            processingDialog.Input.MinValue = minValue;
+            processingDialog.Input.MaxValue = maxValue;
             processingDialog.DataContext = this;
             processingDialog.Closed += delegate { CloseProcessingDialogEvent?.Invoke(this, EventArgs.Empty); };
             processingDialog.ShowDialog();

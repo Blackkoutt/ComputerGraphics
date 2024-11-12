@@ -16,7 +16,13 @@
     <Compile Update="Views\CustomFilterDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\HistogramWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\ImagePointProcessingDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Views\PointProcessingSliderDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Views\RGBCubeWindow.xaml.cs">
@@ -36,6 +42,9 @@
     <Page Update="Views\CustomFilterDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="Views\HistogramWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="Views\ImagePointProcessingDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -46,6 +55,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Styles\Colors.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\PointProcessingSliderDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\RGBCubeWindow.xaml">

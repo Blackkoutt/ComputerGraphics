@@ -2,6 +2,7 @@
 using Gk_01.Enums;
 using Gk_01.Handlers;
 using Gk_01.Helpers.ImagePointProcessing;
+using Gk_01.Helpers.ImageProcessors.ImageBinarization;
 using Gk_01.Helpers.ImageProcessors.ImageFilters;
 using Gk_01.Helpers.ImageProcessors.ImagePointProcessors;
 using Gk_01.Models;
@@ -23,6 +24,7 @@ namespace Gk_01.ViewModels
     {
         private static MainWindowViewModel? _instance = null;
         private ImagePointProcessingHandler _imagePointProcessingHandler;
+        private HistogramViewModel _histogramViewModel;
         private Canvas? _canvas;
         private Image? _currentImage;
         private Image? _defaultImage;
@@ -102,6 +104,13 @@ namespace Gk_01.ViewModels
         public ICommand UndoCommand { get; set; }
         public ICommand RedoCommand { get; set; }
 
+        // Histogram
+        public ICommand HistogramCommand { get; set; }
+        public ICommand BinarizationThresholdCommand { get; set; }
+        public ICommand BinarizationBlackSelectionCommand { get; set; }
+        public ICommand BinarizationMeanIterativeSelectionCommand { get; set; }
+        public ICommand BinarizationEntropySelectionCommand { get; set; }
+
         public MainWindowViewModel(IFileService fileService, IDrawingService drawingService)
         {
             ChangeDrawingShapeCommand = new RelayCommand(ChangeDrawingShape);
@@ -166,6 +175,38 @@ namespace Gk_01.ViewModels
                                   defaultImage: _defaultImage,
                                   currentImage: _currentImage));
 
+            HistogramCommand = new RelayCommand(param => _histogramViewModel!.ShowHistogram(param, currentImage: _currentImage));
+
+            BinarizationThresholdCommand = SetImageProcessingCommandHandler(
+                                    processor: new ThresholdBinarizationProcessor(),
+                                    isDialog: true,
+                                    title: "Binaryzacja",
+                                    labelText: "Wartość progowa: ", 
+                                    minValue: 0,
+                                    maxValue: 255,
+                                    defaultValue: 127);
+
+            BinarizationBlackSelectionCommand = SetImageProcessingCommandHandler(
+                                    processor: new BlackPercentSelectionBinarizationProcessor(),
+                                    isDialog: true,
+                                    title: "Binaryzacja",
+                                    labelText: "Procent czarnych pikseli (%): ",
+                                    minValue: 0,
+                                    maxValue: 100,
+                                    defaultValue: 50);
+
+            BinarizationMeanIterativeSelectionCommand = new RelayCommand(param =>
+                                                        _imagePointProcessingHandler!.AutoBinarizeImage(param,
+                                                        imageProcessor: new MeanIterativeSelectionBinarizationProcessor(),
+                                                        defaultImage: _defaultImage,
+                                                        currentImage: _currentImage));
+
+            BinarizationEntropySelectionCommand = new RelayCommand(param =>
+                                                        _imagePointProcessingHandler!.AutoBinarizeImage(param,
+                                                        imageProcessor: new EntropyBinarizationProcessor(),
+                                                        defaultImage: _defaultImage,
+                                                        currentImage: _currentImage));
+
             // Image filters
             _fileService = fileService;
             _drawingService = drawingService;
@@ -177,7 +218,7 @@ namespace Gk_01.ViewModels
             CanvasRenderTransform.Children.Add(_translateTransform);
         }
 
-        private RelayCommand SetImageProcessingCommandHandler(ImageProcessor processor, bool isDialog = false, string title = "", string labelText = "")
+        private RelayCommand SetImageProcessingCommandHandler(ImageProcessor processor, bool isDialog = false, string title = "", string labelText = "", int minValue = int.MinValue, int maxValue = int.MaxValue, int defaultValue = 0)
         {
             if (isDialog)
             {
@@ -187,7 +228,10 @@ namespace Gk_01.ViewModels
                     defaultImage: _defaultImage,
                     currentImage: _currentImage,
                     title: title,
-                    labelText: labelText
+                    labelText: labelText,
+                    minValue: minValue,
+                    maxValue: maxValue,
+                    defaultValue: defaultValue
                 ));
             }
             else
@@ -214,6 +258,7 @@ namespace Gk_01.ViewModels
         public void OnInit()
         {
             _imagePointProcessingHandler = ImagePointProcessingHandler.Instance;
+            _histogramViewModel = HistogramViewModel.Instance;
             _imagePointProcessingHandler.Canvas = _canvas;
             _imagePointProcessingHandler.CloseProcessingDialogEvent += EndImageProcessing;
             _imagePointProcessingHandler.ProcessedImageEvent += EndImageProcessing;

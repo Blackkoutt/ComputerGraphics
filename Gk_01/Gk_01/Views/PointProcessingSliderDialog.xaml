@@ -1,0 +1,27 @@
+﻿<Window x:Class="Gk_01.Views.PointProcessingSliderDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Gk_01.Views"
+        mc:Ignorable="d"
+        Title="PointProcessingSliderDialog" Height="150" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Label Grid.Row="0" VerticalAlignment="Bottom" x:Name="Label" HorizontalAlignment="Center" Margin="0,40,0,0" FontSize="13" FontWeight="Bold"></Label>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Slider Margin="70,0,0,0" Grid.Row="0" Grid.Column="0" Value="{Binding Value}"  Width="150"/>
+            <TextBlock  Grid.Row="0" Grid.Column="1" Text="{Binding Value}" Width="50" Height="20" IsEnabled="False"/>
+        </Grid>
+    </Grid>
+</Window>

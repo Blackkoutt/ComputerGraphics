@@ -50,6 +50,13 @@
                 <MenuItem Header="Rozmycie gaussowskie" Command="{Binding FilterGaussianCommand}" />
                 <MenuItem Header="Własny filtr" Command="{Binding FilterCustomCommand}" />
             </MenuItem>
+            <MenuItem Header="Histogram" Command="{Binding HistogramCommand}"/>
+            <MenuItem Header="Binaryzacja">
+                <MenuItem Header="Binaryzacja (próg)" Command="{Binding BinarizationThresholdCommand}"/>
+                <MenuItem Header="Procentowa selekcja czarnego" Command="{Binding BinarizationBlackSelectionCommand}"/>
+                <MenuItem Header="Selekcja iteratywna średniej" Command="{Binding BinarizationMeanIterativeSelectionCommand}"/>
+                <MenuItem Header="Selekcja entropii" Command="{Binding BinarizationEntropySelectionCommand}"/>
+            </MenuItem>
         </Menu>
         <StackPanel DockPanel.Dock="Left" Width="220" Background="{StaticResource ResourceKey=menu_background}">
             <Grid HorizontalAlignment="Center" Margin="0,10,0,0">

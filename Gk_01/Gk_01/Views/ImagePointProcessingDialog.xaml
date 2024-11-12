@@ -13,10 +13,9 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Label Grid.Row="0" VerticalAlignment="Bottom" x:Name="Label" HorizontalAlignment="Center" Margin="0,40,0,0" FontSize="13" FontWeight="Bold"></Label>
-        <controls:InputTypeNumber Grid.Row="1" Margin="0,5,0,5"  Width="80" Foreground="{StaticResource ResourceKey=black}" Grid.Column="1" VerticalContentAlignment="Center"
+        <controls:InputTypeNumber x:Name="Input" Grid.Row="1" Margin="0,5,0,5"  Width="80" Foreground="{StaticResource ResourceKey=black}" Grid.Column="1" VerticalContentAlignment="Center"
                    VerticalAlignment="Top"
                    InputValue="{Binding DataContext.Value, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                    Background="Transparent" BorderThickness="0,0,0,1"/>
-        
     </Grid>
 </Window>
