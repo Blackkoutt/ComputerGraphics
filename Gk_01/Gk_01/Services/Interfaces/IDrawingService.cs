@@ -9,7 +9,7 @@ namespace Gk_01.Services.Interfaces
     public interface IDrawingService
     {
         IEnumerable<string> DrawShapes(IEnumerable<ShapeDto> shapeDtoList);
-        CustomPath DrawShape(ShapeTypeEnum? shapeType, Point startPoint, Point endPoint, Color lineColor, Color fillColor, int lineThickness);
+        CustomPath DrawShape(ShapeTypeEnum? shapeType, List<Point> controlPoints, Color lineColor, Color fillColor, int lineThickness);
         Canvas Canvas { set; }
         void ClearCanvas();
     }

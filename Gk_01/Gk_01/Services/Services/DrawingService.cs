@@ -9,8 +9,9 @@ using System.Windows.Media;
 
 namespace Gk_01.Services.Services
 {
-    public class DrawingService : IDrawingService
+    public class DrawingService(IBezierCurveCalculatorService bezierCurveCalculatorService) : IDrawingService
     {
+        private readonly IBezierCurveCalculatorService _bezierCurveCalculatorService = bezierCurveCalculatorService;
         private Canvas? _canvas;
         public Canvas Canvas { set { _canvas = value; } }    
 
@@ -25,8 +26,7 @@ namespace Gk_01.Services.Services
                 {
                     DrawShape(
                       shapeType: (ShapeTypeEnum)shapeTypeEnum!,
-                      startPoint: shape.StartPoint,
-                      endPoint: shape.EndPoint,
+                      controlPoints: new List<Point> { shape.StartPoint, shape.EndPoint },
                       lineColor: (Color)ColorConverter.ConvertFromString(shape.Stroke),
                       fillColor: (Color)ColorConverter.ConvertFromString(shape.Fill),
                       lineThickness: shape.StrokeTickness);
@@ -40,51 +40,84 @@ namespace Gk_01.Services.Services
         }
 
 
-        public CustomPath DrawShape(ShapeTypeEnum? shapeType, Point startPoint, Point endPoint, Color lineColor, Color fillColor, int lineThickness)
+        public CustomPath DrawShape(ShapeTypeEnum? shapeType, List<Point> controlPoints, Color lineColor, Color fillColor, int lineThickness)
         {
             CustomPath shape;
+            var characteristicsPointsDict = CreateCharacteristicsPointDict(controlPoints);
             switch (shapeType)
             {
+   
                 case ShapeTypeEnum.Rectangle:
                     shape = new Rectangle
                     {
-                        StartPoint = startPoint,
-                        EndPoint = endPoint,
+                        CharacteristicPoints = characteristicsPointsDict,
+                        DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
                         StrokeThickness = lineThickness,
-                        DefaultStartPoint = startPoint,
-                        DefaultEndPoint = endPoint,
                     };
                     break;
                 case ShapeTypeEnum.Circle:
                     shape = new Circle
                     {
-                        StartPoint = startPoint,
-                        EndPoint = endPoint,
+                        CharacteristicPoints = characteristicsPointsDict,
+                        DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
                         StrokeThickness = lineThickness,
-                        DefaultStartPoint = startPoint,
-                        DefaultEndPoint = endPoint,
                     };
                     break;
                 case ShapeTypeEnum.Line:
                     shape = new Line
                     {
-                        StartPoint = startPoint,
-                        EndPoint = endPoint,
+                        CharacteristicPoints = characteristicsPointsDict,
+                        DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
                         Stroke = new SolidColorBrush(lineColor),
                         Fill = new SolidColorBrush(fillColor),
                         StrokeThickness = lineThickness,
-                        DefaultStartPoint = startPoint,
-                        DefaultEndPoint = endPoint,
+                    };
+                    break;
+                case ShapeTypeEnum.Curve:
+                    shape = new Curve
+                    {
+                        BezierCurveCalculatorService = _bezierCurveCalculatorService,
+                        CharacteristicPoints = characteristicsPointsDict,
+                        DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
+                        Stroke = new SolidColorBrush(lineColor),
+                        Fill = new SolidColorBrush(fillColor),
+                        StrokeThickness = lineThickness,
+                    };
+                    break;
+                case ShapeTypeEnum.Polygon:
+                    shape = new Polygon
+                    {
+                        CharacteristicPoints = characteristicsPointsDict,
+                        DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
+                        Stroke = new SolidColorBrush(lineColor),
+                        Fill = new SolidColorBrush(fillColor),
+                        StrokeThickness = lineThickness,
                     };
                     break;
                 default: throw new UnrecognizedShapeTypeException("Nie rozpoznano typu figury.");
             }
             _canvas!.Children.Add(shape);
             return shape;
+        }
+
+        private Dictionary<Guid, Point> CreateCharacteristicsPointDict(List<Point> points)
+        {
+            Dictionary<Guid, Point> pointsDict = [];
+            foreach (var point in points)
+            {
+                pointsDict.Add(Guid.NewGuid(), point);
+            }
+            return pointsDict;
+        }
+
+        private Dictionary<Guid, Point> CopyDictionary(Dictionary<Guid,Point> dictionaryToCopy)
+        {
+            return dictionaryToCopy.ToDictionary(pair => pair.Key,
+                 pair => new Point(pair.Value.X, pair.Value.Y));
         }
     }
 }

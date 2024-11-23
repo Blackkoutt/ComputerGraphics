@@ -8,7 +8,7 @@ namespace Gk_01.Helpers.ImageProcessors.ImagePointProcessors
         {
             Parallel.For(0, pixelData.Length, i =>
             {
-                pixelData[i] = (byte)(pixelData[i] * value);
+                pixelData[i] = (byte)Math.Clamp(pixelData[i] * value, 0, 255);
             });
             return pixelData;
         }

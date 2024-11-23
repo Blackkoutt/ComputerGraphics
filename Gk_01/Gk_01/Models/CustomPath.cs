@@ -8,42 +8,36 @@ namespace Gk_01.Models
     public abstract class CustomPath : System.Windows.Shapes.Shape
     {
         protected string shapeType = string.Empty;
-        protected Point defaultStartPoint;
-        protected Point defaultEndPoint;
 
-        public Point DefaultStartPoint
+        public Dictionary<Guid, Point> CharacteristicPoints
         {
-            get { return defaultStartPoint; }
-            set { defaultStartPoint = value; }
-        }
-        public Point DefaultEndPoint
-        {
-            get { return defaultEndPoint; }
-            set { defaultEndPoint = value; }
+            get => (Dictionary<Guid, Point>)GetValue(CharacteristicPointsProperty);
+            set {
+                SetValue(CharacteristicPointsProperty, value);
+            } 
         }
 
+        public static readonly DependencyProperty CharacteristicPointsProperty = DependencyProperty.Register(
+          nameof(CharacteristicPoints), typeof(Dictionary<Guid, Point>), typeof(CustomPath), new FrameworkPropertyMetadata(new Dictionary<Guid, Point>(), FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public Dictionary<Guid, Point> DefaultCharacteristicPoints { get; set; }
+
+       
         public Point StartPoint
         {
-            get => (Point)GetValue(StartPointProperty);
-            set => SetValue(StartPointProperty, value);
+            get => CharacteristicPoints.First().Value;
         }
       
         public Point EndPoint
         {
-            get => (Point)GetValue(EndPointProperty);
-            set => SetValue(EndPointProperty, value);
+            get => CharacteristicPoints.Last().Value;
         }
+
         public string ShapeType => shapeType;
 
         protected double CharacteristicPointR => 8;
-        private Dictionary<ShapeElement, GeometryDrawing> drawingDictionary = [];
-        public Dictionary<ShapeElement, GeometryDrawing> DrawingDictionary => drawingDictionary;
-
-        public static readonly DependencyProperty StartPointProperty = DependencyProperty.Register(
-            nameof(StartPoint), typeof(Point), typeof(CustomPath), new FrameworkPropertyMetadata(new Point(0, 0), FrameworkPropertyMetadataOptions.AffectsRender));
-        
-        public static readonly DependencyProperty EndPointProperty = DependencyProperty.Register(
-          nameof(EndPoint), typeof(Point), typeof(CustomPath), new FrameworkPropertyMetadata(new Point(100, 100), FrameworkPropertyMetadataOptions.AffectsRender));
+        private Dictionary<Guid, (ShapeElement, GeometryDrawing)> drawingDictionary = [];
+        public Dictionary<Guid, (ShapeElement Type, GeometryDrawing Figure)> DrawingDictionary => drawingDictionary;
 
         protected abstract override Geometry DefiningGeometry { get; }
 
@@ -59,25 +53,25 @@ namespace Gk_01.Models
             };
             drawingGroup.Children.Add(drawingShape);
 
-            AddOrReplaceInDictionary(ShapeElement.Figure, drawingShape);
+            AddOrReplaceInDictionary(Guid.NewGuid(), ShapeElement.Figure, drawingShape);
 
-            var p0_point = AddCharacteristicPoint(drawingGroup, StartPoint);
-            AddOrReplaceInDictionary(ShapeElement.P0_Point, p0_point);
-
-            var p1_point = AddCharacteristicPoint(drawingGroup, EndPoint);
-            AddOrReplaceInDictionary(ShapeElement.P1_Point, p1_point);
+            foreach(var (pointId, point) in CharacteristicPoints)
+            {
+                var p0_point = CreateCharacteristicPoint(drawingGroup, point);
+                AddOrReplaceInDictionary(pointId, ShapeElement.CharacteristicPoint, p0_point);
+            }
 
             return drawingGroup;
         }
-        private void AddOrReplaceInDictionary(ShapeElement key, GeometryDrawing drawingShape)
+        private void AddOrReplaceInDictionary(Guid figureGuid, ShapeElement type, GeometryDrawing drawingShape)
         {
-            if (drawingDictionary.ContainsKey(key))
-                drawingDictionary[key] = drawingShape;
+            if (drawingDictionary.ContainsKey(figureGuid))
+                drawingDictionary[figureGuid] = (type, drawingShape);
             else
-                drawingDictionary.Add(key, drawingShape);
+                drawingDictionary.Add(figureGuid, (type, drawingShape));
         }
 
-        private GeometryDrawing AddCharacteristicPoint(DrawingGroup drawingGroup, Point position)
+        private GeometryDrawing CreateCharacteristicPoint(DrawingGroup drawingGroup, Point position)
         {
             var circleGeometry = new EllipseGeometry(position, CharacteristicPointR, CharacteristicPointR);
             var circleDrawing = new GeometryDrawing
@@ -97,31 +91,44 @@ namespace Gk_01.Models
             drawingContext.DrawDrawing(drawing);
         }
 
-        public void SetStartPointX(double x)
+        public void SetPointX(Guid pointId, double x)
         {
-            var startPointY = StartPoint.Y;
-            StartPoint = new Point(x, startPointY);
+            if(CharacteristicPoints.TryGetValue(pointId, out var point))
+            {
+                CharacteristicPoints[pointId] = new Point(x, point.Y);
+                DefaultCharacteristicPoints[pointId] = new Point(x, point.Y);
+                InvalidateVisual();
+            }
+        }
+
+        public void SetPointY(Guid pointId, double y)
+        {
+            if (CharacteristicPoints.TryGetValue(pointId, out var point))
+            {
+                CharacteristicPoints[pointId] = new Point(point.X, y);
+                DefaultCharacteristicPoints[pointId] = new Point(point.X, y);
+                InvalidateVisual();
+            }
+        }
+
+        public void MoveShape(Vector vector)
+        {
+            foreach(var pair in CharacteristicPoints)
+            {
+                var defaultPoint = DefaultCharacteristicPoints[pair.Key];
+                var x = vector.X + defaultPoint.X;
+                var y = vector.Y + defaultPoint.Y;
+                CharacteristicPoints[pair.Key] = new Point(x, y);
+            }
             InvalidateVisual();
         }
 
-        public void SetStartPointY(double y)
+        public void EndMovingShape()
         {
-            var startPointX = StartPoint.X;
-            StartPoint = new Point(startPointX, y);
-            InvalidateVisual();
-        }
-
-        public void SetEndPointX(double x)
-        {
-            var endPointY = EndPoint.Y;
-            EndPoint = new Point(x, endPointY);
-            InvalidateVisual();
-        }
-        public void SetEndPointY(double y)
-        {
-            var endPointX = EndPoint.X;
-            EndPoint = new Point(endPointX, y);
-            InvalidateVisual();
+            DefaultCharacteristicPoints = CharacteristicPoints.ToDictionary(
+                   pair => pair.Key,
+                   pair => new Point(pair.Value.X, pair.Value.Y)
+               );
         }
     }
 }

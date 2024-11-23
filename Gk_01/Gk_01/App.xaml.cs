@@ -23,6 +23,7 @@ namespace Gk_01
 
             IUnityContainer _container = DIContainer.GetContainer();
             _container.RegisterType<IFileService, FileService>(new ContainerControlledLifetimeManager());
+            _container.RegisterType<IBezierCurveCalculatorService, BezierCurveCalculatorService>(new ContainerControlledLifetimeManager());
             _container.RegisterType<IDrawingService, DrawingService>(new ContainerControlledLifetimeManager());
             AllocConsole();
         }

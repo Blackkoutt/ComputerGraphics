@@ -4,6 +4,8 @@
     {
         Rectangle,
         Circle,
-        Line
+        Line,
+        Curve,
+        Polygon
     }
 }

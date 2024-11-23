@@ -13,25 +13,27 @@ namespace Gk_01.Models
 
                 PathGeometry geometry = new PathGeometry();
 
+                var startPoint = CharacteristicPoints.Values.FirstOrDefault();
+                var endPoint = CharacteristicPoints.Values.Skip(1).FirstOrDefault();
                 PathFigure figure = new PathFigure
                 {
-                    StartPoint = StartPoint,
+                    StartPoint = startPoint,
                     IsClosed = true 
                 };
 
                 LineSegment rightTop = new LineSegment
                 {
-                    Point = new Point(EndPoint.X, StartPoint.Y)
+                    Point = new Point(endPoint.X, startPoint.Y)
                 };
 
                 LineSegment rightBottom = new LineSegment
                 {
-                    Point = EndPoint 
+                    Point = endPoint 
                 };
 
                 LineSegment leftBottom = new LineSegment
                 {
-                    Point = new Point(StartPoint.X, EndPoint.Y) 
+                    Point = new Point(startPoint.X, endPoint.Y) 
                 };
 
                 figure.Segments.Add(rightTop);

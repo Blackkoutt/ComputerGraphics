@@ -10,7 +10,6 @@ using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
 using Gk_01.Views;
 using Microsoft.Win32;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,28 +27,37 @@ namespace Gk_01.ViewModels
         private Canvas? _canvas;
         private Image? _currentImage;
         private Image? _defaultImage;
+        private WriteableBitmap? _originalImageWritableBitmap;
         private Stack<Image> imageProcessingUndoStack = [];
         private readonly int maxUndoOperations = 5;
         private Stack<Image> imageProcessingRedoStack = [];
-        private int p0_x;
-        private int p0_y;
-        private int p1_x;
-        private int p1_y;
+
+        private Visibility _curveDegreeVisibility = Visibility.Collapsed;
+        private Visibility _curvePointsVisibility = Visibility.Collapsed;
+        private Visibility _anglesCountVisibility = Visibility.Collapsed;
+
+        private Guid? _currentCharacteriticsPointID;
+        private int polygonAnglesCount = 4;
+
+        private int p_x;
+        private int p_y;
+
+        private int curveDegree = 2;
+        private int clickCount = 0;
+        private List<Point> controlPoints = [];
+
         private int lineThickness = 1;
         private SolidColorBrush selectedLineColor = Brushes.Black;
         private SolidColorBrush selectedFillColor = Brushes.Transparent;
         private Point? firstClickPoint;
         private ShapeTypeEnum? _currentShapeType;
         private CustomPath? _currentShape;
-        private ShapeElement? _currentCharacteristicPoint;
         private bool _isResizing = false;
         private bool _isMoving = false;
         private bool _isCanvasMoving = false;
         private bool _isSaved = true;
         private Point _mouseClickOnShapePosition;
         private Point _mouseClickOnCanvasPosition;
-        private Point _defaultShape_P0;
-        private Point _defaultShape_P1;
         private ScaleTransform _scaleTransform;
         private TranslateTransform _translateTransform;
         private TransformGroup _canvasRenderTransform;
@@ -61,6 +69,8 @@ namespace Gk_01.ViewModels
         private double zoomMin = 0.5;
         private double zoomSpeed = 0.001;
         private double zoom = 1;
+
+        private int curvePointsCount = 20;
 
         private Cursor _canvasCursor = Cursors.Cross;
         private readonly IFileService _fileService;
@@ -101,7 +111,7 @@ namespace Gk_01.ViewModels
         public ICommand FilterCustomCommand { get; set; }
 
         // Undo Redo
-        public ICommand UndoCommand { get; set; }
+        public ICommand ResetImageCommand { get; set; }
         public ICommand RedoCommand { get; set; }
 
         // Histogram
@@ -127,7 +137,7 @@ namespace Gk_01.ViewModels
             CanvasMoveCommand = new RelayCommand(CanvasMove);
             CanvasPaintCommand = new RelayCommand(CanvasPaint);
             SaveFileCommand = new RelayCommand(SaveFile);
-            UndoCommand = new RelayCommand(Undo);
+            ResetImageCommand = new RelayCommand(ResetImage);
             RedoCommand = new RelayCommand(Redo);
 
             // Image points processing
@@ -250,9 +260,15 @@ namespace Gk_01.ViewModels
             // TO DO
         }
 
-        private void Undo(object parameter)
+        private void ResetImage(object parameter)
         {
-            // TO DO
+            if(_originalImageWritableBitmap != null)
+            {
+                _currentImage.Source = _originalImageWritableBitmap;
+                _defaultImage.Source = _originalImageWritableBitmap;
+                _canvas.Children.Clear();
+                _canvas.Children.Add(_currentImage);         
+            }
         }
 
         public void OnInit()
@@ -268,18 +284,6 @@ namespace Gk_01.ViewModels
         {
             if(_defaultImage != null && _currentImage != null)
             {
-               /* imageProcessingUndoStack.Push(new Image
-                {
-                    Source = (_defaultImage.Source as BitmapSource)?.Clone()
-                });
-
-                if (imageProcessingUndoStack.Count > maxUndoOperations)
-                {
-                    imageProcessingUndoStack.Reverse();
-                    imageProcessingUndoStack.Pop();
-                    imageProcessingUndoStack.Reverse();
-                }*/
-
                 _defaultImage = new Image
                 {
                     Source = (_currentImage.Source as BitmapSource)?.Clone()
@@ -356,6 +360,10 @@ namespace Gk_01.ViewModels
                     {
                         Source = (image.Source as BitmapSource)?.Clone()
                     };
+
+                    var originalImageBitmapSource = _currentImage.Source as BitmapSource;
+                    _originalImageWritableBitmap = new WriteableBitmap(originalImageBitmapSource);
+
                     _drawingService.ClearCanvas();
                     _canvas!.Children.Add(image);
                     imageDefaultLeft = 0;
@@ -418,7 +426,7 @@ namespace Gk_01.ViewModels
         {
             if (_currentShapeType is not null)
             {
-                _drawingService.DrawShape(
+               /* _drawingService.DrawShape(
                         shapeType: _currentShapeType,
                         startPoint: new Point(p0_x, p0_y),
                         endPoint: new Point(p1_x, p1_y),
@@ -426,27 +434,35 @@ namespace Gk_01.ViewModels
                         fillColor: selectedFillColor.Color,
                         lineThickness: lineThickness);
                 _currentShapeType = null;
-                _isSaved = false;
+                _isSaved = false;*/
             }
         }
 
         private void DrawShapeByMouseClick(Point clickPosition)
         {
-            if (firstClickPoint == null)
-                firstClickPoint = clickPosition;
-            else
+            controlPoints.Add(clickPosition);
+            clickCount++;
+
+
+            bool isCurveReady = _currentShapeType == ShapeTypeEnum.Curve && clickCount == curveDegree + 1;
+            bool isPolygonReady = _currentShapeType == ShapeTypeEnum.Polygon && clickCount == polygonAnglesCount;
+            bool isOtherShapeReady = _currentShapeType != ShapeTypeEnum.Curve
+                                     && _currentShapeType != ShapeTypeEnum.Polygon
+                                     && clickCount == 2;
+
+            if (isCurveReady || isPolygonReady || isOtherShapeReady)
             {
-                var secondClickPoint = clickPosition;
                 _drawingService.DrawShape(
-                    shapeType: _currentShapeType,
-                    startPoint: (Point)firstClickPoint,
-                    endPoint: secondClickPoint,
-                    lineColor: selectedLineColor.Color,
-                    fillColor: selectedFillColor.Color,
-                    lineThickness: lineThickness);
+                        shapeType: _currentShapeType,
+                        controlPoints: controlPoints,
+                        lineColor: selectedLineColor.Color,
+                        fillColor: selectedFillColor.Color,
+                        lineThickness: lineThickness);
                 _currentShapeType = null;
-                firstClickPoint = null;
                 _isSaved = false;
+                firstClickPoint = null;
+                clickCount = 0;
+                controlPoints.Clear();
             }
         }
 
@@ -465,7 +481,7 @@ namespace Gk_01.ViewModels
                 {
                     _isCanvasMoving = true;
                     _mouseClickOnCanvasPosition = clickPosition;
-                    _canvas.CaptureMouse();
+                    //_canvas.CaptureMouse();
                 }
 
                 if (firstClickPoint == null && _actualCanvasMode == CanvasMode.Paint && hitElement != null && hitElement is CustomPath shapePath)
@@ -475,7 +491,10 @@ namespace Gk_01.ViewModels
                         _currentShape.Stroke = selectedLineColor;
 
                     _currentShape = shapePath;
-                    LoadClickedShapeInfoAndChangeColor(shapePath);
+                    SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke);
+                    SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill);
+                    LineThickness = (int)_currentShape!.StrokeThickness;
+                    _currentShape.Stroke = Brushes.Blue;
 
                     CheckWhatSegmentOfShapeWasClicked(shapePath, clickPosition);
                 }
@@ -484,48 +503,34 @@ namespace Gk_01.ViewModels
             }
         }
 
-        private void LoadClickedShapeInfoAndChangeColor(CustomPath shapePath)
-        {
-            // Load clicked shape info
-            P0_X = (int)_currentShape!.StartPoint.X;
-            P0_Y = (int)_currentShape!.StartPoint.Y;
-            P1_X = (int)_currentShape!.EndPoint.X;
-            P1_Y = (int)_currentShape!.EndPoint.Y;
-            SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke);
-            SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill);
-            LineThickness = (int)_currentShape!.StrokeThickness;
-
-            // Set clicked shape color
-            _currentShape.Stroke = Brushes.Blue;
-        }
-
 
         private void CheckWhatSegmentOfShapeWasClicked(CustomPath shapePath, Point mouseClickPoint)
         {
-            foreach (var (element, drawing) in shapePath.DrawingDictionary)
+            bool isCharacteristicPoint = false;
+            foreach (var (key, value) in shapePath.DrawingDictionary)
             {
-                var geometry = drawing.Geometry;
-                bool isCharactertisticPoint = (element == ShapeElement.P0_Point || element == ShapeElement.P1_Point);
+                var geometryType = value.Type;
+                var geometry = value.Figure.Geometry;
 
-                // If characteristic point was clicked
-                if (isCharactertisticPoint && geometry.FillContains(mouseClickPoint))
+                if (geometryType == ShapeElement.CharacteristicPoint && geometry.FillContains(mouseClickPoint))
                 {
-                    PrepareToResizeShape(element);
-                    break;
-                }
-
-                // If shape was clicked
-                else if (element == ShapeElement.Figure && geometry.FillContains(mouseClickPoint))
-                {
-                    PrepareToMoveShape(mouseClickPoint);
+                    PrepareToResizeShape(key, mouseClickPoint);
+                    //var a = geometry is CustomPath;
+                    isCharacteristicPoint = true;
                     break;
                 }
             }
+            if (!isCharacteristicPoint)
+            {
+                PrepareToMoveShape(mouseClickPoint);
+            }
         }
 
-        private void PrepareToResizeShape(ShapeElement characteristicPoint)
+        private void PrepareToResizeShape(Guid pointId, Point clickPoint)
         {
-            _currentCharacteristicPoint = characteristicPoint; // P0 or P1
+            _currentCharacteriticsPointID = pointId;
+            P_X = (int)clickPoint.X;
+            P_Y = (int)clickPoint.Y;
             CanvasCursor = Cursors.SizeNWSE;
             _isResizing = true;
         }
@@ -534,11 +539,9 @@ namespace Gk_01.ViewModels
         {
             _isMoving = true;
             _mouseClickOnShapePosition = mouseClickPoint;
-            _defaultShape_P0 = new Point(_currentShape!.StartPoint.X, _currentShape!.StartPoint.Y);
-            _defaultShape_P1 = new Point(_currentShape!.EndPoint.X, _currentShape!.EndPoint.Y);
             CanvasCursor = Cursors.SizeAll;
-            _currentShape.CaptureMouse();
         }
+
 
         private void CanvasMouseMove(object parameter)
         {
@@ -551,14 +554,14 @@ namespace Gk_01.ViewModels
                 }
                 if (_isMoving)
                 {
+                    _currentShape!.CaptureMouse();
                     MoveShape(currentMousePosition);
                 }
                 if (_isCanvasMoving)
                 {
+                    _canvas!.CaptureMouse();
                     var deltaX = (int)(currentMousePosition.X - _mouseClickOnCanvasPosition.X);
                     var deltaY = (int)(currentMousePosition.Y - _mouseClickOnCanvasPosition.Y);
-                    Console.WriteLine("DeltaX: " + deltaX);
-                    Console.WriteLine("DeltaY: " + deltaY);
                     foreach (UIElement child in _canvas.Children)
                     {
                         if(child is Image image)
@@ -568,10 +571,8 @@ namespace Gk_01.ViewModels
                         }
                         if(child is CustomPath childPath)
                         {
-                            childPath.SetStartPointX(childPath.DefaultStartPoint.X + deltaX);
-                            childPath.SetStartPointY(childPath.DefaultStartPoint.Y + deltaY);
-                            childPath.SetEndPointX(childPath.DefaultEndPoint.X + deltaX);
-                            childPath.SetEndPointY(childPath.DefaultEndPoint.Y + deltaY);
+                            var moveVector = new Vector(deltaX, deltaY);
+                            childPath.MoveShape(moveVector);
                         }
                     }
                 }
@@ -581,40 +582,35 @@ namespace Gk_01.ViewModels
 
         private void ResizeShape(Point currentMousePosition)
         {
-            if (_currentCharacteristicPoint == ShapeElement.P0_Point)
-            {
-                P0_X = (int)currentMousePosition.X;
-                P0_Y = (int)currentMousePosition.Y;
-                _isSaved = false;
-
-            }
-            else if (_currentCharacteristicPoint == ShapeElement.P1_Point)
-            {
-                P1_X = (int)currentMousePosition.X;
-                P1_Y = (int)currentMousePosition.Y;
-                _isSaved = false;
-            }
+            P_X = (int)currentMousePosition.X;
+            P_Y = (int)currentMousePosition.Y;
         }
 
         private void MoveShape(Point currentMousePosition)
         {
             var deltaX = (int)(currentMousePosition.X - _mouseClickOnShapePosition.X);
             var deltaY = (int)(currentMousePosition.Y - _mouseClickOnShapePosition.Y);
-            P0_X = (int)_defaultShape_P0.X + deltaX;
-            P0_Y = (int)_defaultShape_P0.Y + deltaY;
-            P1_X = (int)_defaultShape_P1.X + deltaX;
-            P1_Y = (int)_defaultShape_P1.Y + deltaY;
+            var moveVector = new Vector(deltaX, deltaY);
+            _currentShape!.MoveShape(moveVector);
             _isSaved = false;
         }
 
         private void CanvasMouseUp(object parameter)
         {
-            _isResizing = false;
-            _isMoving = false;
-            
-            if(_isCanvasMoving ) 
+            if (_isResizing)
             {
-                foreach (UIElement child in _canvas.Children)
+                _isResizing = false;
+               // _currentCharacteriticsPointID = null;
+            }
+            else if (_isMoving)
+            {
+                _isMoving = false;
+                _currentShape!.EndMovingShape();
+                _currentShape!.ReleaseMouseCapture();
+            }
+            else if(_isCanvasMoving ) 
+            {
+                foreach (UIElement child in _canvas!.Children)
                 {
                     if(child is Image image)
                     {
@@ -623,8 +619,7 @@ namespace Gk_01.ViewModels
                     }
                     if (child is CustomPath childPath)
                     {
-                        childPath.DefaultStartPoint = childPath.StartPoint;
-                        childPath.DefaultEndPoint = childPath.EndPoint;
+                        childPath.EndMovingShape();
                     }
                 }
                 _isCanvasMoving = false;
@@ -652,14 +647,33 @@ namespace Gk_01.ViewModels
                     {
                         _canvas!.Children.Remove(_currentShape);
                         _currentShape = _drawingService.DrawShape(_currentShapeType,
-                                                  _currentShape.StartPoint,
-                                                  _currentShape.EndPoint,
+                                                  new List<Point> { _currentShape.StartPoint, _currentShape.EndPoint },
                                                   ((SolidColorBrush)_currentShape.Stroke).Color,
                                                   ((SolidColorBrush)_currentShape.Fill).Color,
                                                   (int)_currentShape.StrokeThickness);
                         firstClickPoint = null;
                         _currentShapeType = null;
                     }
+                    if(_currentShapeType == ShapeTypeEnum.Curve)
+                    {
+                        CurveDegreeVisibility = Visibility.Visible;
+                        CurvePointsVisibility = Visibility.Visible;
+                        AnglesCountVisibility = Visibility.Collapsed;
+                    }
+                    else if(_currentShapeType == ShapeTypeEnum.Polygon)
+                    {
+                        CurveDegreeVisibility = Visibility.Collapsed;
+                        CurvePointsVisibility = Visibility.Collapsed;
+                        AnglesCountVisibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        CurveDegreeVisibility = Visibility.Collapsed;
+                        CurvePointsVisibility = Visibility.Collapsed;
+                        AnglesCountVisibility = Visibility.Collapsed;
+                    }
+                    controlPoints.Clear();
+                    clickCount = 0;
                 }
                     
             }
@@ -686,17 +700,14 @@ namespace Gk_01.ViewModels
             _drawingService.ClearCanvas();
             _currentImage = null;
             _defaultImage = null;
-            P0_X = 0;
-            P0_Y = 0;
-            P1_X = 0;
-            P1_Y = 0;
+            P_X = 0;
+            P_Y = 0;
             LineThickness = 1;
             SelectedLineColor = Brushes.Black;
             SelectedFillColor = Brushes.Transparent;
             firstClickPoint = null;
-            _currentShapeType = null;
+            _currentCharacteriticsPointID = null;
             _currentShape = null;
-            _currentCharacteristicPoint = null;
             _isResizing = false;
             _isMoving = false;
             _isSaved = true;
@@ -839,46 +850,97 @@ namespace Gk_01.ViewModels
                 if (_currentShape != null) _currentShape.StrokeThickness = lineThickness;
             }
         }
-        public int P0_X
+
+        public int P_X
         {
-            get { return p0_x; }
+            get { return p_x; }
             set
             {
-                p0_x = value;
+                p_x = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.SetStartPointX(p0_x);
+                if (_currentShape != null && _currentCharacteriticsPointID != null)
+                {
+                    _currentShape.SetPointX((Guid)_currentCharacteriticsPointID, p_x);
+                }
+
             }
         }
-        public int P0_Y
+        public int P_Y
         {
-            get { return p0_y; }
+            get { return p_y; }
             set
             {
-                p0_y = value;
+                p_y = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.SetStartPointY(p0_y);
+                if (_currentShape != null && _currentCharacteriticsPointID != null)
+                {
+                    _currentShape.SetPointY((Guid)_currentCharacteriticsPointID, p_y);
+                }
+
             }
         }
-        public int P1_X
+
+        public int CurveDegree
         {
-            get { return p1_x; }
+            get { return curveDegree; }
             set
             {
-                p1_x = value;
+                curveDegree = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.SetEndPointX(p1_x);
             }
         }
-        public int P1_Y
+
+        public int CurvePointsCount
         {
-            get { return p1_y; }
+            get { return curvePointsCount; }
             set
             {
-                p1_y = value;
+                curvePointsCount = value;
                 OnPropertyChanged();
-                if (_currentShape != null) _currentShape.SetEndPointY(p1_y);
+                if(_currentShape is Curve curve) curve.CurvePointsCount = curvePointsCount;
             }
         }
+
+        public int PolygonAnglesCount
+        {
+            get { return polygonAnglesCount; }
+            set
+            {
+                polygonAnglesCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Visibility CurveDegreeVisibility
+        {
+            get => _curveDegreeVisibility;
+            set
+            {
+                _curveDegreeVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Visibility CurvePointsVisibility
+        {
+            get => _curvePointsVisibility;
+            set
+            {
+                _curvePointsVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Visibility AnglesCountVisibility
+        {
+            get => _anglesCountVisibility;
+            set
+            {
+                _anglesCountVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
         public static MainWindowViewModel Instance
         {
             get

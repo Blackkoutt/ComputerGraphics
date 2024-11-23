@@ -9,8 +9,10 @@ namespace Gk_01.Models
             get
             {
                 shapeType = ShapeTypeEnum.Circle.ToString();
-                double radius = Math.Sqrt(Math.Pow(EndPoint.X - StartPoint.X, 2) + Math.Pow(EndPoint.Y - StartPoint.Y, 2));
-                var ellipseGeometry = new EllipseGeometry(StartPoint, radius, radius);
+                var startPoint = CharacteristicPoints.Values.FirstOrDefault();
+                var endPoint = CharacteristicPoints.Values.Skip(1).FirstOrDefault();
+                double radius = Math.Sqrt(Math.Pow(endPoint.X - startPoint.X, 2) + Math.Pow(endPoint.Y - startPoint.Y, 2));
+                var ellipseGeometry = new EllipseGeometry(CharacteristicPoints.Values.FirstOrDefault(), radius, radius);
 
                 return ellipseGeometry;
             }

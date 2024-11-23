@@ -17,13 +17,13 @@ namespace Gk_01.Models
 
                 PathFigure figure = new PathFigure
                 {
-                    StartPoint = StartPoint,
+                    StartPoint = CharacteristicPoints.Values.FirstOrDefault(),
                     IsClosed = false
                 };
 
                 LineSegment line = new LineSegment
                 {
-                    Point = EndPoint
+                    Point = CharacteristicPoints.Values.Skip(1).FirstOrDefault(),    
                 };
 
                 figure.Segments.Add(line);

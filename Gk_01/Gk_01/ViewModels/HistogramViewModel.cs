@@ -41,7 +41,7 @@ namespace Gk_01.ViewModels
             prevGChannel = GChannel.ToList();
             prevBChannel = BChannel.ToList();
 
-            // YCbCr
+            // YCbCr - Y lumination brightness
             var yChannel = new List<byte>();
             var cbChannel = new List<byte>();
             var crChannel = new List<byte>();
@@ -82,11 +82,12 @@ namespace Gk_01.ViewModels
         {
             List<byte> equalizedChannel = new List<byte>(channel.Count);
 
+            // Brightness histogram 
             var histogram = new int[256];
             foreach (var value in channel)
                 histogram[value]++;
 
-            // Oblicz CDF (skumulowaną dystrybuantę)
+            // CDF cumulative distribution
             int totalPixels = channel.Count;
             int cumulative = 0;
             var cdf = new int[256];
@@ -96,7 +97,7 @@ namespace Gk_01.ViewModels
                 cdf[i] = cumulative;
             }
 
-            // Wyrównaj histogram
+            // Equalize histogram
             var minCDF = cdf.FirstOrDefault(value => value > 0);
             foreach (var value in channel)
             {

@@ -22,7 +22,7 @@ namespace Gk_01.ViewModels
     {
         private static RGBCubeViewModel? _instance = null;
         private Viewport3D? _viewport3DCube;
-        private Polygon? crossSectionSquare;
+        private System.Windows.Shapes.Polygon? crossSectionSquare;
         private Canvas? _canvas;
         private ModelVisual3D? _visualModelCube;
         private ModelVisual3D? _visualModelTriangle;
@@ -35,7 +35,6 @@ namespace Gk_01.ViewModels
 
         private byte maxColorValue;
 
-        private GeometryModel3D triangleModel;
         public RGBCubeViewModel()
         {
             maxColorValue = 255;
@@ -48,13 +47,13 @@ namespace Gk_01.ViewModels
         private void CreateCubeAndSquare(object parameter)
         {
             CreateRGBCube();
-            CreateSquare();
+            CreateCrossSectionSquare();
         }
 
 
-        private void CreateSquare()
+        private void CreateCrossSectionSquare()
         {
-            crossSectionSquare = new Polygon
+            crossSectionSquare = new System.Windows.Shapes.Polygon
             {
                 Points = new PointCollection
                 {
@@ -97,18 +96,18 @@ namespace Gk_01.ViewModels
             int width = 255;
             int height = 255;
 
-            // Tworzymy bitmapę do zapisu pikseli
             WriteableBitmap bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
-            int stride = width * 4; // Ilość bajtów na wiersz (4 bajty na piksel dla BGRA32)
+            int stride = width * 4;
             byte[] pixelData = new byte[height * stride];
 
+            // One max color r or g or b
             byte r = maxColor.R, g = maxColor.G, b = maxColor.B;
 
-            var a = 1;
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
+                    // Others colors increase from 0 to 255
                     if (xColor == Colors.Red) r = (byte)x;
                     else if (xColor == Colors.Lime) g = (byte)x;
                     else if (xColor == Colors.Blue) b = (byte)x;
@@ -119,19 +118,19 @@ namespace Gk_01.ViewModels
 
                     int index = (y * stride) + (x * 4);
 
-                    // BGRA - kolejność dla formatu Bgra32
-                    pixelData[index + 0] = b;   // B
-                    pixelData[index + 1] = g;  // G
-                    pixelData[index + 2] = r;    // R
-                    pixelData[index + 3] = 255;    // A (przezroczystość, ustawiona na pełną widoczność)
+                    // BGRA
+                    pixelData[index + 0] = b;   
+                    pixelData[index + 1] = g;
+                    pixelData[index + 2] = r; 
+                    pixelData[index + 3] = 255;  
                 }
             }
 
-            // Zapisujemy dane pikseli do bitmapy
             bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixelData, stride, 0);
 
             return new ImageBrush(bitmap);
         }
+
         private RGBCubeMaterial GetCubeMaterial(Color xColor, Color yColor, Color maxColor)
         {
             return new RGBCubeMaterial
@@ -145,6 +144,7 @@ namespace Gk_01.ViewModels
 
         private void CreateRGBCube()
         {
+            // Materials
             var firstMaterial = GetCubeMaterial(Colors.Lime, Colors.Blue, Colors.Red);
             var secondMaterial = GetCubeMaterial(Colors.Blue, Colors.Red, Colors.Lime);
             var thirdMaterial = GetCubeMaterial(Colors.Lime, Colors.Red, Colors.Blue);
@@ -152,9 +152,9 @@ namespace Gk_01.ViewModels
             var fifthMaterial = GetCubeMaterial(Colors.Lime, Colors.Blue, Colors.Black);
             var sixthMaterial = GetCubeMaterial(Colors.Lime, Colors.Red, Colors.Black);
 
-            // Tworzenie kostki
             var cube = new Model3DGroup();
 
+            // Cube faces
             cube.Children.Add(CreateFace(new Point3D(0, 0, 1), new Vector3D(1, 0, 0), new Vector3D(0, 1, 0), firstMaterial));    // front
             cube.Children.Add(CreateFace(new Point3D(0, 0, 0), new Vector3D(1, 0, 0), new Vector3D(0, 1, 0), fifthMaterial));   // back
             cube.Children.Add(CreateFace(new Point3D(0, 0, 0), new Vector3D(0, 0, 1), new Vector3D(0, 1, 0), fourthMaterial));    // left
@@ -162,12 +162,12 @@ namespace Gk_01.ViewModels
             cube.Children.Add(CreateFace(new Point3D(0, 1, 0), new Vector3D(1, 0, 0), new Vector3D(0, 0, 1), thirdMaterial));  // top
             cube.Children.Add(CreateFace(new Point3D(0, 0, 0), new Vector3D(1, 0, 0), new Vector3D(0, 0, 1), sixthMaterial));    // bottom
 
+            // Light in scene
             var ambientLight = new AmbientLight(Colors.LightGray);
 
             cube.Children.Add(ambientLight);
 
             _visualModelCube!.Content = cube;
-            //viewport.Children.Add(modelVisual3D);
         }
 
         private GeometryModel3D CreateFace(Point3D origin, Vector3D width, Vector3D height, RGBCubeMaterial material)
@@ -182,27 +182,32 @@ namespace Gk_01.ViewModels
             _cubeFaces.Add(cubeFace);
 
             var mesh = new MeshGeometry3D();
+            
+            // Corners
             mesh.Positions.Add(origin);
             mesh.Positions.Add(origin + width);
             mesh.Positions.Add(origin + width + height);
             mesh.Positions.Add(origin + height);
+
+            // First triangle
             mesh.TriangleIndices.Add(0);
             mesh.TriangleIndices.Add(1);
             mesh.TriangleIndices.Add(2);
+
+            // Second triangle
             mesh.TriangleIndices.Add(0);
             mesh.TriangleIndices.Add(2);
             mesh.TriangleIndices.Add(3);
 
-            // Ustaw współrzędne tekstur
-            mesh.TextureCoordinates.Add(new Point(0, 0)); // Wierzchołek 0 (lewy górny)
-            mesh.TextureCoordinates.Add(new Point(1, 0)); // Wierzchołek 1 (prawy górny)
-            mesh.TextureCoordinates.Add(new Point(1, 1)); // Wierzchołek 2 (prawy dolny)
-            mesh.TextureCoordinates.Add(new Point(0, 1)); // Wierzchołek 3 (lewy dolny)
+            // Texture coordinates
+            mesh.TextureCoordinates.Add(new Point(0, 0)); 
+            mesh.TextureCoordinates.Add(new Point(1, 0));
+            mesh.TextureCoordinates.Add(new Point(1, 1));
+            mesh.TextureCoordinates.Add(new Point(0, 1));
 
-            var geometryModel = new GeometryModel3D(mesh, material.Material);
-           
+            var geometryModel = new GeometryModel3D(mesh, material.Material);          
 
-            geometryModel.BackMaterial = material.Material; // Opcjonalnie dla tylnych ściane
+            geometryModel.BackMaterial = material.Material;
 
             return geometryModel;
         }
@@ -211,10 +216,7 @@ namespace Gk_01.ViewModels
         {
             if (parameter is MouseEventArgs e)
             {
-                // Pobierz pozycję myszy w `Viewport3D`
                 Point mousePosition = e.GetPosition(_viewport3DCube);
-
-                // Przeprowadź `HitTest` w `Viewport3D`
                 PointHitTestParameters hitParams = new PointHitTestParameters(mousePosition);
                 VisualTreeHelper.HitTest(_viewport3DCube, null, ResultCallback, hitParams);
             }
@@ -223,7 +225,6 @@ namespace Gk_01.ViewModels
 
         private HitTestResultBehavior ResultCallback(HitTestResult result)
         {
-            // Sprawdź, czy wynik testu to `RayHitTestResult`
             if (result is RayHitTestResult rayResult)
             {
                 var geometryHit = rayResult.ModelHit as GeometryModel3D;

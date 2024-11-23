@@ -4,6 +4,7 @@
     {
         Figure,
         P0_Point,
-        P1_Point
+        P1_Point,
+        CharacteristicPoint
     }
 }

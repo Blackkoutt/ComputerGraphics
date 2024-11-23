@@ -30,6 +30,7 @@ namespace Gk_01.Controls
         private bool _isColorSpectrumMoving = false;
 
         private LinearGradientBrush colorSpectrumGradient;
+        private bool isUpdateing = false;
 
         private string hexColorValue;
         public ColorPicker()
@@ -45,61 +46,34 @@ namespace Gk_01.Controls
             KValue = 100;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ConvertRGBToCMYK()
         {
-            var window = new RGBCubeWindow();
-            window.Show();
-        }
+            if (isUpdateing) return;
+            isUpdateing = true;
 
-        private void SaturationGradient_MouseDown(object sender, MouseEventArgs e)
-        {
-            Point clickPosition = e.GetPosition(SaturationGradient);
-            _isSaturationMoving = true;
-            _mouseClickPosition = clickPosition;
-            SaturationGradient.CaptureMouse();
-        }
-
-        private void SaturationGradient_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (_isSaturationMoving)
+            KValue = (int)((1 - Math.Max(Math.Max((double)RValue / 255, (double)GValue / 255), (double)BValue / 255)) * 100);
+            if (KValue != 100)
             {
-                Point currentMousePosition = e.GetPosition(SaturationGradient);
-                if(currentMousePosition.X > SaturationGradient.ActualWidth ||
-                   currentMousePosition.Y > SaturationGradient.ActualHeight ||
-                   currentMousePosition.X < 0 ||
-                   currentMousePosition.Y < 0)
-                {
-                    return;
-                } 
-                    
-                IndicatorPosition.X = currentMousePosition.X - (ColorPickerIndicator.Width / 2);
-                IndicatorPosition.Y = currentMousePosition.Y - (ColorPickerIndicator.Height / 2);
-
-                CalculateSaturationAndBrightness(currentMousePosition);
+                CValue = (int)((1 - (double)RValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
+                MValue = (int)((1 - (double)GValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
+                YValue = (int)((1 - (double)BValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
             }
+            else
+            {
+                CValue = MValue = YValue = 0;
+            }
+
+
+            isUpdateing = false;
         }
-
-        private void UpdateIndicatorPosition()
+        private void ConvertCMYKToRGB()
         {
-            if (_isSaturationMoving) return;
-
-            var (h, s, v) = ConvertRGBToHSV(RValue, GValue, BValue);
-
-            // Oblicz pozycję X na podstawie nasycenia (saturation)
-            double x = s * SaturationGradient.ActualWidth;
-
-            // Oblicz pozycję Y na podstawie jasności (brightness)
-            double y = (1 - v) * SaturationGradient.ActualHeight;
-
-            // Przesuń wskaźnik, uwzględniając jego środek
-            IndicatorPosition.X = x - (ColorPickerIndicator.Width / 2);
-            IndicatorPosition.Y = y - (ColorPickerIndicator.Height / 2);
-        }
-
-        private void SaturationGradient_MouseUp(object sender, MouseEventArgs e)
-        {
-            _isSaturationMoving = false;
-            SaturationGradient.ReleaseMouseCapture();
+            if (isUpdateing) return;
+            isUpdateing = true;
+            RValue = (int)(255 * (1 - ((double)CValue / 100)) * (1 - ((double)KValue / 100)));
+            GValue = (int)(255 * (1 - ((double)MValue / 100)) * (1 - ((double)KValue / 100)));
+            BValue = (int)(255 * (1 - ((double)YValue / 100)) * (1 - ((double)KValue / 100)));
+            isUpdateing = false;
         }
 
         private void InitializeColorSpectrum()
@@ -116,9 +90,9 @@ namespace Gk_01.Controls
             double offset = 0.0;
 
             // G+
-            for(int i = 0; i <= 255; i++)
+            for (int i = 0; i <= 255; i++)
             {
-                colorSpectrumGradient.GradientStops.Add(new GradientStop(Color.FromRgb(255, (byte)i, 0), offset));            
+                colorSpectrumGradient.GradientStops.Add(new GradientStop(Color.FromRgb(255, (byte)i, 0), offset));
                 offset += offsetStep;
             }
 
@@ -160,27 +134,60 @@ namespace Gk_01.Controls
             ColorSpectrum.Fill = colorSpectrumGradient;
         }
 
+
+        private void SaturationGradient_MouseDown(object sender, MouseEventArgs e)
+        {
+            Point clickPosition = e.GetPosition(SaturationGradient);
+            _isSaturationMoving = true;
+            _mouseClickPosition = clickPosition;
+            SaturationGradient.CaptureMouse();
+        }
+
+        private void SaturationGradient_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isSaturationMoving)
+            {
+                Point currentMousePosition = e.GetPosition(SaturationGradient);
+                if(currentMousePosition.X > SaturationGradient.ActualWidth ||
+                   currentMousePosition.Y > SaturationGradient.ActualHeight ||
+                   currentMousePosition.X < 0 ||
+                   currentMousePosition.Y < 0)
+                {
+                    return;
+                } 
+                    
+                IndicatorPosition.X = currentMousePosition.X - (ColorPickerIndicator.Width / 2);
+                IndicatorPosition.Y = currentMousePosition.Y - (ColorPickerIndicator.Height / 2);
+
+                CalculateSaturationAndBrightness(currentMousePosition);
+            }
+        }
+
         private void CalculateSaturationAndBrightness(Point point)
         {
             double saturationValue = point.X / SaturationGradient.ActualWidth;
-            saturationValue = Math.Clamp(saturationValue, 0.0, 1.0); // Upewnij się, że wartość jest w zakresie 0-1
+            saturationValue = Math.Clamp(saturationValue, 0.0, 1.0);
 
-            // Obliczanie wartości jasności na podstawie pozycji Y
             double brightnessValue = 1 - (point.Y / SaturationGradient.ActualHeight);
-            brightnessValue = Math.Clamp(brightnessValue, 0.0, 1.0); // Upewnij się, że wartość jest w zakresie 0-1
+            brightnessValue = Math.Clamp(brightnessValue, 0.0, 1.0);
 
-            // Ustalanie koloru na podstawie nasycenia i jasności
-            Color baseColor = SecondGradientColor.Color; // Kolor, który chcesz nasycić
+            // set saturation and brightnessValue
+            Color baseColor = SecondGradientColor.Color;
             RValue = (int)((baseColor.R * saturationValue + 255 * (1 - saturationValue)) * brightnessValue);
             GValue = (int)((baseColor.G * saturationValue + 255 * (1 - saturationValue)) * brightnessValue);
             BValue = (int)((baseColor.B * saturationValue + 255 * (1 - saturationValue)) * brightnessValue);
 
             Color selectedColor = Color.FromArgb(255, (byte)RValue, (byte)GValue, (byte)BValue);
 
-            // Ustawienie koloru wskaźnika
             var newColor = new SolidColorBrush(selectedColor);
             SelectedColor = newColor;
             HexColorValue = SelectedColor.Color.ToString();
+        }
+
+        private void SaturationGradient_MouseUp(object sender, MouseEventArgs e)
+        {
+            _isSaturationMoving = false;
+            SaturationGradient.ReleaseMouseCapture();
         }
 
         private void ColorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -197,71 +204,9 @@ namespace Gk_01.Controls
                 _isColorSpectrumMoving = false;
             }
         }
-
-
         private void ColorBlock_Click(object sender, RoutedEventArgs e)
         {
-           ColorPopup.IsOpen = !ColorPopup.IsOpen; // Otwiera/zamyka popup
-        }
-
-        private bool isUpdateing = false;
-
-        private void ConvertRGBToCMYK()
-        {
-            if (isUpdateing) return;
-            isUpdateing = true;
-
-            KValue = (int)((1 - Math.Max(Math.Max((double)RValue / 255, (double)GValue / 255), (double)BValue / 255)) * 100);
-            if(KValue != 100)
-            {
-                CValue = (int)((1 - (double)RValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
-                MValue = (int)((1 - (double)GValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
-                YValue = (int)((1 - (double)BValue / 255 - ((double)KValue / 100)) / (1 - ((double)KValue / 100)) * 100);
-            }
-            else
-            {
-                CValue = MValue = YValue = 0;
-            }
-
-
-            isUpdateing = false;
-        }
-        private void ConvertCMYKToRGB()
-        {
-            if (isUpdateing) return;
-            isUpdateing = true;
-            RValue = (int)(255 * (1 - ((double)CValue /100)) * (1 - ((double)KValue /100)));
-            GValue = (int)(255 * (1 - ((double)MValue /100)) * (1 - ((double)KValue / 100)));
-            BValue = (int)(255 * (1 - ((double)YValue /100)) * (1 - ((double)KValue / 100)));
-            isUpdateing = false;
-        }
-
-
-        private (double H, double S, double V) ConvertRGBToHSV(int r, int g, int b)
-        {
-            double rNorm = r / 255.0;
-            double gNorm = g / 255.0;
-            double bNorm = b / 255.0;
-
-            double max = Math.Max(rNorm, Math.Max(gNorm, bNorm));
-            double min = Math.Min(rNorm, Math.Max(gNorm, bNorm));
-            double delta = max - min;
-
-            double h = 0;
-            if (delta != 0)
-            {
-                if (max == rNorm)
-                    h = (60 * ((gNorm - bNorm) / delta) + 360) % 360;
-                else if (max == gNorm)
-                    h = (60 * ((bNorm - rNorm) / delta) + 120) % 360;
-                else if (max == bNorm)
-                    h = (60 * ((rNorm - gNorm) / delta) + 240) % 360;
-            }
-
-            double s = max == 0 ? 0 : delta / max;
-            double v = max;
-
-            return (h, s, v);
+           ColorPopup.IsOpen = !ColorPopup.IsOpen; 
         }
 
         private void SetColorFromArgb()
@@ -271,7 +216,14 @@ namespace Gk_01.Controls
             HexColorValue = SelectedColor.Color.ToString();
             if(!_isSaturationMoving && !_isColorSpectrumMoving) SecondGradientColor.Color = newColor.Color;
         }
-          
+
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new RGBCubeWindow();
+            window.Show();
+        }
+
         public string HexColorValue
         {
             get { return hexColorValue; }
@@ -291,7 +243,6 @@ namespace Gk_01.Controls
                 OnPropertyChanged();
 
                 ConvertRGBToCMYK();
-               // UpdateIndicatorPosition();
                 SetColorFromArgb();
             }
         }
@@ -305,7 +256,6 @@ namespace Gk_01.Controls
                 OnPropertyChanged();
 
                 ConvertRGBToCMYK();
-                //UpdateIndicatorPosition();
                 SetColorFromArgb();
             }
         }
@@ -319,7 +269,6 @@ namespace Gk_01.Controls
                 OnPropertyChanged();
 
                 ConvertRGBToCMYK();
-                //UpdateIndicatorPosition();
                 SetColorFromArgb();
             }
         }
@@ -331,9 +280,6 @@ namespace Gk_01.Controls
             {
                 aValue = value;
                 OnPropertyChanged();
-
-               /* ConvertRGBToCMYK();
-                SetColorFromArgb();*/
             }
         }
         public int CValue
