@@ -16,6 +16,8 @@ namespace Gk_01.Services.Services
         public Canvas Canvas { set { _canvas = value; } }    
 
         public void ClearCanvas() => _canvas!.Children.Clear();
+        
+        
         public IEnumerable<string> DrawShapes(IEnumerable<ShapeDto> shapeDtoList)
         {
             List<string> badShapeTypes = [];
@@ -26,7 +28,7 @@ namespace Gk_01.Services.Services
                 {
                     DrawShape(
                       shapeType: (ShapeTypeEnum)shapeTypeEnum!,
-                      controlPoints: new List<Point> { shape.StartPoint, shape.EndPoint },
+                      controlPoints: shape.ControlPoints,
                       lineColor: (Color)ColorConverter.ConvertFromString(shape.Stroke),
                       fillColor: (Color)ColorConverter.ConvertFromString(shape.Fill),
                       lineThickness: shape.StrokeTickness);

@@ -9,8 +9,7 @@ namespace Gk_01.Extenstions
         {
             return new ShapeDto
             {
-                StartPoint = geometryPath.StartPoint,
-                EndPoint = geometryPath.EndPoint,
+                ControlPoints = geometryPath.CharacteristicPoints.Values.ToList(),
                 ShapeType = geometryPath.ShapeType,
                 Stroke = geometryPath.Stroke.ToString(),
                 Fill = geometryPath.Fill.ToString(),

@@ -2,16 +2,17 @@
 using Gk_01.Enums;
 using Gk_01.Handlers;
 using Gk_01.Helpers.ImagePointProcessing;
+using Gk_01.Helpers.ImageProcessors;
 using Gk_01.Helpers.ImageProcessors.ImageBinarization;
 using Gk_01.Helpers.ImageProcessors.ImageFilters;
 using Gk_01.Helpers.ImageProcessors.ImagePointProcessors;
+using Gk_01.Helpers.ImageProcessors.MorphologicalOperators;
 using Gk_01.Models;
 using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
-using Gk_01.Services.Services;
 using Gk_01.Views;
 using Microsoft.Win32;
-using OpenTK.Platform.Windows;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -42,7 +43,7 @@ namespace Gk_01.ViewModels
         private Visibility _characteristicsPointVisibility = Visibility.Visible;
         private Visibility _rotationVectorVisibility = Visibility.Collapsed;
         private Visibility _rotationAngleVisibility = Visibility.Collapsed;
-
+        private Visibility _scaleVisibility = Visibility.Collapsed;
 
         private Guid? _currentCharacteriticsPointID;
         private int polygonAnglesCount = 4;
@@ -92,7 +93,8 @@ namespace Gk_01.ViewModels
         private double zoomSpeed = 0.001;
         private double zoom = 1;
 
-
+        // Structuring Element
+        private int structuringElementSize = 3;
 
         private int curvePointsCount = 20;
 
@@ -145,13 +147,28 @@ namespace Gk_01.ViewModels
         public ICommand ResetImageCommand { get; set; }
         public ICommand RedoCommand { get; set; }
 
+
         // Histogram
         public ICommand HistogramCommand { get; set; }
+
+        // Binarization
         public ICommand BinarizationThresholdCommand { get; set; }
         public ICommand BinarizationBlackSelectionCommand { get; set; }
         public ICommand BinarizationMeanIterativeSelectionCommand { get; set; }
         public ICommand BinarizationEntropySelectionCommand { get; set; }
 
+
+        // Morphological operators 
+        public ICommand DilatationOperatorCommand { get; set; }
+        public ICommand ErosionOperatorCommand { get; set; }
+        public ICommand OpenOperatorCommand { get; set; }
+        public ICommand CloseOperatorCommand { get; set; }
+        public ICommand HitOrMissOperatorCommand { get; set; }
+
+
+        private ImageOperatorProcessor dilatationOperatorProcessor;
+        private ImageOperatorProcessor erosionOperatorProcessor;
+        private StructuringElementType _currentStructuringElementType = StructuringElementType.Square;
 
         private bool rotatePointSet = false;
         private bool scalingPointSet = false;
@@ -204,6 +221,11 @@ namespace Gk_01.ViewModels
                                     isDialog: true,
                                     title: "Zmiana jasności",
                                     labelText: "Wartość piksela: ");
+
+            dilatationOperatorProcessor = new DilatationOperatorProcessor();
+            DilatationOperatorCommand = SetImageProcessingCommandHandler(processor: dilatationOperatorProcessor);
+            erosionOperatorProcessor = new ErosionOperatorProcessor();
+            ErosionOperatorCommand = SetImageProcessingCommandHandler(processor: erosionOperatorProcessor);
 
             ImageGrayscaleAverageMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleAverageMethodProcessor());
             ImageGrayscaleLuminosityMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleLuminosityProcessor());
@@ -263,6 +285,71 @@ namespace Gk_01.ViewModels
             CanvasRenderTransform.Children.Add(_translateTransform);
         }
 
+        private void SerializeObjects(object parameter)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog()
+            {
+                Title = "Serializuj jako",
+                Filter = "Text Files (*.txt)|*.txt|JSON Files (*.json)|*.json|XML Files (*.xml)|*.xml",
+                FilterIndex = 1 // default txt
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                string filePath = saveFileDialog.FileName;
+                try
+                {
+                    _fileService.SerializeToFile(filePath, _canvas!.Children);
+                    _isSaved = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Wystąpił błąd: {ex.Message}",
+                                   "Błąd serializacji",
+                                   MessageBoxButton.OK,
+                                   MessageBoxImage.Error);
+                }
+
+            }
+        }
+
+        private void DeserializeObjects(object parameter)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Deserializuj z",
+                Filter = "JSON files (*.json)|*.json|XML files (*.xml)|*.xml|Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                Multiselect = false
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+                try
+                {
+                    var shapeDtoList = _fileService.DeserializeFromFile(filePath);
+                    var badShapeTypes = _drawingService.DrawShapes(shapeDtoList);
+                    if (badShapeTypes.Any())
+                    {
+                        MessageBox.Show($"Kilka figur zostało niewczytanych z powodu nieobsługiwanych typów: " +
+                                        $"{string.Join(", ", badShapeTypes)}",
+                                        "Błąd wczytywania",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Błąd: {ex.Message}",
+                                    "Błąd deserializacji",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error);
+                }
+            }
+        }
+
+        
+
         private void SetCurrentShape(CustomPath shapePath)
         {
             if (_currentShape != null) _currentShape.Stroke = selectedLineColor;
@@ -308,11 +395,21 @@ namespace Gk_01.ViewModels
                         CharacteristicsPointVisibility = Visibility.Collapsed;
                         RotationAngleVisibility = Visibility.Collapsed;
                         RotationVectorVisibility = Visibility.Collapsed;
+                        ScaleVisibility = Visibility.Collapsed;
                     }
                     else if (_actualCanvasMode == CanvasMode.Rotate)
                     {
                         RotationVectorVisibility = Visibility.Visible;
                         RotationAngleVisibility = Visibility.Visible;
+                        TranslationVectorVisibility = Visibility.Collapsed;
+                        CharacteristicsPointVisibility = Visibility.Collapsed;
+                        ScaleVisibility = Visibility.Collapsed;
+                    }
+                    else if (_actualCanvasMode == CanvasMode.Scaling)
+                    {
+                        ScaleVisibility = Visibility.Visible;
+                        RotationVectorVisibility = Visibility.Collapsed;
+                        RotationAngleVisibility = Visibility.Collapsed;
                         TranslationVectorVisibility = Visibility.Collapsed;
                         CharacteristicsPointVisibility = Visibility.Collapsed;
                     }
@@ -322,6 +419,7 @@ namespace Gk_01.ViewModels
                         RotationAngleVisibility = Visibility.Collapsed;
                         CharacteristicsPointVisibility = Visibility.Visible;
                         RotationVectorVisibility = Visibility.Collapsed;
+                        ScaleVisibility = Visibility.Collapsed;
                     }
                 }
             }
@@ -514,16 +612,15 @@ namespace Gk_01.ViewModels
                 else if (_isRotateing)
                 {
                     _canvas!.CaptureMouse();
-                    double angleRadians = Math.Atan2(currentMousePosition.Y - _defaultRotationPosition.Y, currentMousePosition.X - _defaultRotationPosition.X);
-                    RotationAngle = angleRadians;
+                    var angleInRadians = Math.Atan2(currentMousePosition.Y - _defaultRotationPosition.Y, currentMousePosition.X - _defaultRotationPosition.X);
+                    double angleDegrees = angleInRadians * (180 / Math.PI);
+                    RotationAngle = angleDegrees;
                 }
                 else if (_isScaling)
                 {
                     _canvas!.CaptureMouse();
                     Scale_X = Math.Abs(ScalingPoint_X - currentMousePosition.X) / Math.Abs(ScalingPoint_X - _defaultScalingPosition.X);
                     Scale_Y = Math.Abs(ScalingPoint_Y - currentMousePosition.Y) / Math.Abs(ScalingPoint_Y - _defaultScalingPosition.Y);
-                    Console.WriteLine($"ScaleX {Scale_X}");
-                    Console.WriteLine($"ScaleY {Scale_Y}");
                 }
                 else if (_isCanvasMoving)
                 {
@@ -603,6 +700,7 @@ namespace Gk_01.ViewModels
                         CurvePointsVisibility = Visibility.Collapsed;
                         AnglesCountVisibility = Visibility.Collapsed;
                         RotationAngleVisibility = Visibility.Collapsed;
+                        ScaleVisibility = Visibility.Collapsed;
                     }
                     controlPoints.Clear();
                     clickCount = 0;
@@ -610,14 +708,6 @@ namespace Gk_01.ViewModels
 
             }
         }
-
-
-
-
-
-
-
-
 
         private RelayCommand SetImageProcessingCommandHandler(ImageProcessor processor, bool isDialog = false, string title = "", string labelText = "", int minValue = int.MinValue, int maxValue = int.MaxValue, int defaultValue = 0)
         {
@@ -895,71 +985,7 @@ namespace Gk_01.ViewModels
             _isMoving = false;
             _isSaved = true;
         }
-
         
-
-        private void DeserializeObjects(object parameter)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Title = "Deserializuj z",
-                Filter = "JSON files (*.json)|*.json|XML files (*.xml)|*.xml|Text files (*.txt)|*.txt|All files (*.*)|*.*",
-                Multiselect = false
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                string filePath = openFileDialog.FileName;
-                try
-                {
-                    var shapeDtoList = _fileService.DeserializeFromFile(filePath);
-                    var badShapeTypes = _drawingService.DrawShapes(shapeDtoList);
-                    if (badShapeTypes.Any())
-                    {
-                        MessageBox.Show($"Kilka figur zostało niewczytanych z powodu nieobsługiwanych typów: " +
-                                        $"{string.Join(", ", badShapeTypes)}",
-                                        "Błąd wczytywania",
-                                        MessageBoxButton.OK,
-                                        MessageBoxImage.Warning);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Błąd: {ex.Message}",
-                                    "Błąd deserializacji",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void SerializeObjects(object parameter)
-        {
-            SaveFileDialog saveFileDialog = new SaveFileDialog()
-            {
-                Title = "Serializuj jako",
-                Filter = "Text Files (*.txt)|*.txt|JSON Files (*.json)|*.json|XML Files (*.xml)|*.xml",
-                FilterIndex = 1 // default txt
-            };
-
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                string filePath = saveFileDialog.FileName;
-                try
-                {
-                    _fileService.SerializeToFile(filePath, _canvas!.Children);
-                    _isSaved = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Wystąpił błąd: {ex.Message}",
-                                   "Błąd serializacji",
-                                   MessageBoxButton.OK,
-                                   MessageBoxImage.Error);
-                }
-
-            }
-        }
 
 
         public TransformGroup CanvasRenderTransform
@@ -1022,16 +1048,17 @@ namespace Gk_01.ViewModels
             }
         }
 
-        private void RotateShape()
+        private void RotateShape(double angleInRadians)
         {
             if (_currentShape != null)
             {
                 var rotationPoint = new Point(RotationPoint_X, RotationPoint_Y);
-                _transformations2DService.RotateShape(_currentShape!, rotationPoint, RotationAngle);
+                _transformations2DService.RotateShape(_currentShape!, rotationPoint, angleInRadians);
                // _currentShape!.RotateShape(rotationPoint, RotationAngle);
                 _isSaved = false;
             }
         }
+
 
         public double RotationAngle
         {
@@ -1039,7 +1066,8 @@ namespace Gk_01.ViewModels
             set
             {
                 rotationAngle = value;
-                RotateShape();
+                double rotationAngleInRadians = rotationAngle * (Math.PI / 180);
+                RotateShape(rotationAngleInRadians);
                 OnPropertyChanged();
             }
         }
@@ -1226,6 +1254,16 @@ namespace Gk_01.ViewModels
                 OnPropertyChanged();
             }
         }
+        public Visibility ScaleVisibility
+        {
+            get => _scaleVisibility;
+            set
+            {
+                _scaleVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
 
 
         public Visibility CharacteristicsPointVisibility
@@ -1274,6 +1312,18 @@ namespace Gk_01.ViewModels
             set
             {
                 _anglesCountVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int StructuringElementSize
+        {
+            get => structuringElementSize;
+            set
+            {
+                structuringElementSize = value;
+                dilatationOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
+                erosionOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
                 OnPropertyChanged();
             }
         }

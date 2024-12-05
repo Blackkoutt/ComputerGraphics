@@ -17,8 +17,11 @@ namespace Gk_01.Helpers.Serialize
             foreach(var shapeDto in shapeListDto)
             {
                 stringBuilder.AppendLine($"{nameof(shapeDto.ShapeType)}: {shapeDto.ShapeType}");
-                stringBuilder.AppendLine($"{nameof(shapeDto.StartPoint)}: X:{shapeDto.StartPoint.X} Y:{shapeDto.StartPoint.Y}");
-                stringBuilder.AppendLine($"{nameof(shapeDto.EndPoint)}: X:{shapeDto.EndPoint.X} Y:{shapeDto.EndPoint.Y}");
+                stringBuilder.AppendLine($"{nameof(shapeDto.ControlPoints)}: ");
+                foreach(var controlPoint  in shapeDto.ControlPoints)
+                {
+                    stringBuilder.AppendLine($"X: {controlPoint.X} Y: {controlPoint.Y}");
+                }
                 stringBuilder.AppendLine($"{nameof(shapeDto.Stroke)}: {shapeDto.Stroke}");
                 stringBuilder.AppendLine($"{nameof(shapeDto.Fill)}: {shapeDto.Fill}");
                 stringBuilder.AppendLine($"{nameof(shapeDto.StrokeTickness)}: {shapeDto.StrokeTickness}");
@@ -31,33 +34,47 @@ namespace Gk_01.Helpers.Serialize
         {
             List<ShapeDto> shapeOutputList = [];
             var shapeList = stringToDeserialize.Trim().Split("\r\n\r\n");
+            List<Point> characteristicPoints = [];
             foreach (var shape in shapeList)
             {
+                characteristicPoints.Clear();
                 var shapeProperties = shape.Trim().Split("\n");
                 var shapeDto = new ShapeDto();
                 foreach (var property in shapeProperties)
                 {
                     var propertyTab = property.Trim().Split(": ");
-                    var propertyName = propertyTab[0].Trim();
-                    var propertyValue = propertyTab[1].Trim();
-                    if (string.IsNullOrEmpty(propertyValue))
-                        throw new SerializationException("Wystąpił błąd podczas deserializacji pliku txt. Sprawdź czy plik zawiera poprawny format.");
 
-                    var shapeProperty = shapeDto.GetType().GetProperty(propertyName);
-                    if (shapeProperty != null)
+                    if (propertyTab.Length == 3 &&
+                        double.TryParse(propertyTab[1].Trim().Split(" ")[0], out double xParseResult) &&
+                        double.TryParse(propertyTab[2].Trim(), out double yParseResult))
                     {
-                        try
-                        {
-                            var convertedValue = ConvertPropertyValue(shapeProperty, shapeDto, propertyValue);
-                            shapeProperty.SetValue(shapeDto, convertedValue);
-                        }
-                        catch(ConversionException)
-                        {
-                            throw;
-                        }       
+                        characteristicPoints.Add(new Point(xParseResult, yParseResult));
                     }
-                    else throw new SerializationException("Wystąpił błąd podczas deserializacji pliku txt. Sprawdź czy plik zawiera poprawny format.");
+                    else
+                    {
+                        var propertyName = propertyTab[0].Trim();
+                        if (propertyName == $"{nameof(shapeDto.ControlPoints)}:") continue;
+                        var propertyValue = propertyTab[1].Trim();
+                        if (string.IsNullOrEmpty(propertyValue))
+                            throw new SerializationException("Wystąpił błąd podczas deserializacji pliku txt. Sprawdź czy plik zawiera poprawny format.");
+
+                        var shapeProperty = shapeDto.GetType().GetProperty(propertyName);
+                        if (shapeProperty != null)
+                        {
+                            try
+                            {
+                                var convertedValue = ConvertPropertyValue(shapeProperty, shapeDto, propertyValue);
+                                shapeProperty.SetValue(shapeDto, convertedValue);
+                            }
+                            catch (ConversionException)
+                            {
+                                throw;
+                            }
+                        }
+                        else throw new SerializationException("Wystąpił błąd podczas deserializacji pliku txt. Sprawdź czy plik zawiera poprawny format.");
+                    }          
                 }
+                shapeDto.ControlPoints.AddRange(characteristicPoints);
                 shapeOutputList.Add(shapeDto);
             }
             return shapeOutputList;

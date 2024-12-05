@@ -10,6 +10,9 @@
     <Compile Update="Controls\ColorPicker.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Controls\InputTypeDouble.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Controls\InputTypeNumber.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -34,6 +37,9 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\ColorPicker.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Controls\InputTypeDouble.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Controls\InputTypeNumber.xaml">

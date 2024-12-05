@@ -1,32 +1,41 @@
-﻿using System.ComponentModel;
-using System.Drawing;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace Gk_01.Controls
 {
     /// <summary>
-    /// Logika interakcji dla klasy InputTypeNumber.xaml
+    /// Logika interakcji dla klasy InputTypeDouble.xaml
     /// </summary>
-    public partial class InputTypeNumber : UserControl, INotifyPropertyChanged
+    public partial class InputTypeDouble : UserControl, INotifyPropertyChanged
     {
         private bool _isButtonUpPressed;
         private bool _isButtonDownPressed;
 
         private DispatcherTimer _autoIncrementTimer;
-        private const int _incrementStep = 1;
         private const int _interval = 25;
 
         private DispatcherTimer _delayTimer;
         private const int _delayInterval = 200;
-        public InputTypeNumber()
+        public InputTypeDouble()
         {
             InitializeComponent();
             DataContext = this;
-            InputValue = 0;
+            InputDoubleValue = 0;
             InputTypeNumberTextBox.LostFocus += InputTypeNumberTextBox_LostFocus;
 
             _autoIncrementTimer = new DispatcherTimer();
@@ -36,6 +45,19 @@ namespace Gk_01.Controls
             _delayTimer = new DispatcherTimer();
             _delayTimer.Interval = TimeSpan.FromMilliseconds(_delayInterval);
             _delayTimer.Tick += DelayTimer_Tick;
+        }
+
+        public static readonly DependencyProperty StepProperty =
+            DependencyProperty.Register(nameof(Step), typeof(double), typeof(InputTypeNumber),
+            new FrameworkPropertyMetadata(0.1, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+
+        public double Step
+        {
+            get { return (double)GetValue(StepProperty); }
+            set
+            {
+                SetValue(StepProperty, value);
+            }
         }
 
         private void DelayTimer_Tick(object? sender, EventArgs e)
@@ -48,52 +70,52 @@ namespace Gk_01.Controls
 
         private void AutoIncrementTimer_Tick(object? sender, EventArgs e)
         {
-            if (_isButtonUpPressed && InputValue < MaxValue)
-                InputValue += _incrementStep;
+            if (_isButtonUpPressed && InputDoubleValue < MaxDoubleValue)
+                InputDoubleValue += Step;
 
-            else if (_isButtonDownPressed && InputValue > MinValue)
-                InputValue -= _incrementStep;
+            else if (_isButtonDownPressed && InputDoubleValue > MinDoubleValue)
+                InputDoubleValue -= Step;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
 
-        public static readonly DependencyProperty InputValueProperty =
-            DependencyProperty.Register(nameof(InputValue), typeof(int), typeof(InputTypeNumber),
-            new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+        public static readonly DependencyProperty InputDoubleValueProperty =
+            DependencyProperty.Register(nameof(InputDoubleValue), typeof(double), typeof(InputTypeDouble),
+            new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
-        public int InputValue
+        public double InputDoubleValue
         {
-            get { return (int)GetValue(InputValueProperty); }
+            get { return (double)GetValue(InputDoubleValueProperty); }
             set
             {
-                SetValue(InputValueProperty, value);
+                SetValue(InputDoubleValueProperty, value);
             }
         }
 
-        public static readonly DependencyProperty MaxValueProperty =
-           DependencyProperty.Register(nameof(MaxValue), typeof(int), typeof(InputTypeNumber),
+        public static readonly DependencyProperty MaxDoubleValueProperty =
+           DependencyProperty.Register(nameof(MaxDoubleValue), typeof(int), typeof(InputTypeDouble),
            new FrameworkPropertyMetadata(int.MaxValue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
-        public int MaxValue
+        public int MaxDoubleValue
         {
-            get { return (int)GetValue(MaxValueProperty); }
+            get { return (int)GetValue(MaxDoubleValueProperty); }
             set
             {
-                SetValue(MaxValueProperty, value);
+                SetValue(MaxDoubleValueProperty, value);
             }
         }
 
-        public static readonly DependencyProperty MinValueProperty =
-          DependencyProperty.Register(nameof(MinValue), typeof(int), typeof(InputTypeNumber),
+        public static readonly DependencyProperty MinDoubleValueProperty =
+          DependencyProperty.Register(nameof(MinDoubleValue), typeof(int), typeof(InputTypeDouble),
           new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
-        public int MinValue
+        public int MinDoubleValue
         {
-            get { return (int)GetValue(MinValueProperty); }
+            get { return (int)GetValue(MinDoubleValueProperty); }
             set
             {
-                SetValue(MinValueProperty, value);
+                SetValue(MinDoubleValueProperty, value);
             }
         }
 
@@ -130,33 +152,33 @@ namespace Gk_01.Controls
 
         private void InputTypeNumberTextBox_preview_text_input(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = !int.TryParse(e.Text, out _);
+            e.Handled = !double.TryParse(e.Text, out _);
         }
 
         private void InputTypeNumberTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(InputTypeNumberTextBox.Text, out int value))
+            if (double.TryParse(InputTypeNumberTextBox.Text, out double value))
             {
-                if (value > MaxValue) InputValue = MaxValue;
-                else if (value < MinValue) InputValue = MinValue;
-                else InputValue = value;
+                if (value > MaxDoubleValue) InputDoubleValue = MaxDoubleValue;
+                else if (value < MinDoubleValue) InputDoubleValue = MinDoubleValue;
+                else InputDoubleValue = value;
             }
             else
             {
-                InputTypeNumberTextBox.Text = InputValue.ToString();
+                InputTypeNumberTextBox.Text = InputDoubleValue.ToString();
             }
         }
 
         private void Button_Down_Click(object sender, RoutedEventArgs e)
         {
-           if ( InputValue > MinValue) InputValue -= _incrementStep;
+            if (InputDoubleValue > MinDoubleValue) InputDoubleValue -= Step;
         }
 
         private void Button_Up_Click(object sender, RoutedEventArgs e)
         {
-            if (InputValue < MaxValue)
+            if (InputDoubleValue < MaxDoubleValue)
             {
-                InputValue += _incrementStep;
+                InputDoubleValue += Step;
             }
         }
     }
