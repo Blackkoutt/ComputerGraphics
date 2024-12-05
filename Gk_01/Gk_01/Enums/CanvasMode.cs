@@ -3,6 +3,9 @@
     public enum CanvasMode
     {
         Paint,
-        Move
+        Move,
+        Translate,
+        Rotate,
+        Scaling
     }
 }

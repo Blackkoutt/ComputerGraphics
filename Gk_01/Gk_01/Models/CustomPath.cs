@@ -1,5 +1,6 @@
 ﻿
 using Gk_01.Enums;
+using ScottPlot;
 using System.Windows;
 using System.Windows.Media;
 
@@ -111,24 +112,69 @@ namespace Gk_01.Models
             }
         }
 
-        public void MoveShape(Vector vector)
+        /*public void RotateShape(Point rotationPoint, double angle)
         {
-            foreach(var pair in CharacteristicPoints)
+            var rotationPointTranslate1 = rotationPoint.X * (1 - Math.Cos(angle)) + rotationPoint.Y * Math.Sin(angle);
+            var rotationPointTranslate2 = rotationPoint.Y * (1 - Math.Cos(angle)) - rotationPoint.X * Math.Sin(angle);
+            double[,] rotateMatrix =
             {
-                var defaultPoint = DefaultCharacteristicPoints[pair.Key];
-                var x = vector.X + defaultPoint.X;
-                var y = vector.Y + defaultPoint.Y;
-                CharacteristicPoints[pair.Key] = new Point(x, y);
-            }
+                { Math.Cos(angle), -Math.Sin(angle), rotationPointTranslate1 },
+                { Math.Sin(angle), Math.Cos(angle), rotationPointTranslate2 },
+                { 0, 0, 1 }
+            };
+
+            TransformShape(rotateMatrix);             
             InvalidateVisual();
         }
 
-        public void EndMovingShape()
+        public void TranslateShape(Vector translateVector)
+        {
+            double[,] translateMatrix =
+            {
+                { 1.0, 0, translateVector.X },
+                { 0, 1.0, translateVector.Y },
+                { 0, 0, 1.0 }
+            };
+
+            TransformShape(translateMatrix);
+            InvalidateVisual();
+        }
+
+
+        private void TransformShape(double[,] transformationMatrix)
+        {
+            double[] homogeneousCoordinates = new double[3];
+            double[] translatedValues = new double[3];
+            foreach (var pair in CharacteristicPoints)
+            {
+                var defaultPoint = DefaultCharacteristicPoints[pair.Key];
+                homogeneousCoordinates[0] = defaultPoint.X;
+                homogeneousCoordinates[1] = defaultPoint.Y;
+                homogeneousCoordinates[2] = 1;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    double sum = 0;
+                    for (int j = 0; j < 3; j++)
+                    {
+                        sum += homogeneousCoordinates[j] * transformationMatrix[i, j];
+                    }
+                    translatedValues[i] = sum;
+                }
+
+                var x = translatedValues[0]; //vector.X + defaultPoint.X;
+                var y = translatedValues[1]; //vector.Y + defaultPoint.Y;
+
+                CharacteristicPoints[pair.Key] = new Point(x, y);
+            }
+        }
+
+        public void EndShapeTransformation()
         {
             DefaultCharacteristicPoints = CharacteristicPoints.ToDictionary(
                    pair => pair.Key,
                    pair => new Point(pair.Value.X, pair.Value.Y)
                );
-        }
+        }*/
     }
 }

@@ -40,6 +40,26 @@ namespace Gk_01.Services.Services
         }
 
 
+        public CustomPath DrawRotationOrScallingPoint(Point clickPoint)
+        {
+            var radius = 8;
+            List<Point> controlPoints = new List<Point>()
+            {
+                clickPoint, new Point(clickPoint.X + radius, clickPoint.Y)
+            };
+            var characteristicsPointsDict = CreateCharacteristicsPointDict(controlPoints);
+            var point =  new Circle
+            {
+                CharacteristicPoints = characteristicsPointsDict,
+                DefaultCharacteristicPoints = CopyDictionary(characteristicsPointsDict),
+                Stroke = new SolidColorBrush(Colors.Blue),
+                Fill = new SolidColorBrush(Colors.Blue),
+                StrokeThickness = 1,
+            };
+            _canvas!.Children.Add(point);
+            return point;
+        }
+
         public CustomPath DrawShape(ShapeTypeEnum? shapeType, List<Point> controlPoints, Color lineColor, Color fillColor, int lineThickness)
         {
             CustomPath shape;

@@ -8,7 +8,7 @@ namespace Gk_01.Models
     public class Curve : CustomPath
     {
         private IBezierCurveCalculatorService? bezierCurveCalculatorService;
-        public IBezierCurveCalculatorService BezierCurveCalculatorService
+        public IBezierCurveCalculatorService BezierCurveCalculatorService 
         {
             set { bezierCurveCalculatorService = value; }
         }

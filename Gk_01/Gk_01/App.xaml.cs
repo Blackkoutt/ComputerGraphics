@@ -25,6 +25,7 @@ namespace Gk_01
             _container.RegisterType<IFileService, FileService>(new ContainerControlledLifetimeManager());
             _container.RegisterType<IBezierCurveCalculatorService, BezierCurveCalculatorService>(new ContainerControlledLifetimeManager());
             _container.RegisterType<IDrawingService, DrawingService>(new ContainerControlledLifetimeManager());
+            _container.RegisterType<ITransformations2DService, Transformations2DService>(new ContainerControlledLifetimeManager());
             AllocConsole();
         }
     }

@@ -8,8 +8,10 @@ using Gk_01.Helpers.ImageProcessors.ImagePointProcessors;
 using Gk_01.Models;
 using Gk_01.Observable;
 using Gk_01.Services.Interfaces;
+using Gk_01.Services.Services;
 using Gk_01.Views;
 using Microsoft.Win32;
+using OpenTK.Platform.Windows;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -32,15 +34,32 @@ namespace Gk_01.ViewModels
         private readonly int maxUndoOperations = 5;
         private Stack<Image> imageProcessingRedoStack = [];
 
+        // Visibility
         private Visibility _curveDegreeVisibility = Visibility.Collapsed;
         private Visibility _curvePointsVisibility = Visibility.Collapsed;
         private Visibility _anglesCountVisibility = Visibility.Collapsed;
+        private Visibility _translationVectorVisibility = Visibility.Collapsed;
+        private Visibility _characteristicsPointVisibility = Visibility.Visible;
+        private Visibility _rotationVectorVisibility = Visibility.Collapsed;
+        private Visibility _rotationAngleVisibility = Visibility.Collapsed;
+
 
         private Guid? _currentCharacteriticsPointID;
         private int polygonAnglesCount = 4;
 
         private int p_x;
         private int p_y;
+        private int translation_X;
+        private int translation_Y;
+        private int rotationPoint_X;
+        private int rotationPoint_Y;
+        private int scalingPoint_X;
+        private int scalingPoint_Y;
+
+        private double scale_X;
+        private double scale_Y;
+
+        private double rotationAngle;
 
         private int curveDegree = 2;
         private int clickCount = 0;
@@ -49,14 +68,17 @@ namespace Gk_01.ViewModels
         private int lineThickness = 1;
         private SolidColorBrush selectedLineColor = Brushes.Black;
         private SolidColorBrush selectedFillColor = Brushes.Transparent;
-        private Point? firstClickPoint;
         private ShapeTypeEnum? _currentShapeType;
         private CustomPath? _currentShape;
         private bool _isResizing = false;
         private bool _isMoving = false;
+        private bool _isRotateing = false;
+        private bool _isScaling = false;
         private bool _isCanvasMoving = false;
         private bool _isSaved = true;
         private Point _mouseClickOnShapePosition;
+        private Point _defaultRotationPosition;
+        private Point _defaultScalingPosition;
         private Point _mouseClickOnCanvasPosition;
         private ScaleTransform _scaleTransform;
         private TranslateTransform _translateTransform;
@@ -70,11 +92,21 @@ namespace Gk_01.ViewModels
         private double zoomSpeed = 0.001;
         private double zoom = 1;
 
+
+
         private int curvePointsCount = 20;
 
         private Cursor _canvasCursor = Cursors.Cross;
+
+        // Services
         private readonly IFileService _fileService;
         private readonly IDrawingService _drawingService;
+        private readonly ITransformations2DService _transformations2DService;
+
+
+        private CustomPath? _rotationPoint = null;
+        private CustomPath? _scalingPoint = null;
+        private Point? _defaultRotationPoint = null;
         public ICommand ChangeDrawingShapeCommand { get; set; }
         public ICommand DrawShapeCommand { get; set; }
         public ICommand CanvasMouseDownCommand { get; set; }
@@ -86,8 +118,7 @@ namespace Gk_01.ViewModels
         public ICommand CloseCommand { get; set; }
         public ICommand CanvasMouseWheelCommand { get; set; }
         public ICommand LoadFileCommand { get; set; }
-        public ICommand CanvasMoveCommand { get; set; }
-        public ICommand CanvasPaintCommand { get; set; }
+        public ICommand CanvasModeCommand { get; set; }
         public ICommand SaveFileCommand { get; set; }
 
 
@@ -121,7 +152,11 @@ namespace Gk_01.ViewModels
         public ICommand BinarizationMeanIterativeSelectionCommand { get; set; }
         public ICommand BinarizationEntropySelectionCommand { get; set; }
 
-        public MainWindowViewModel(IFileService fileService, IDrawingService drawingService)
+
+        private bool rotatePointSet = false;
+        private bool scalingPointSet = false;
+
+        public MainWindowViewModel(IFileService fileService, IDrawingService drawingService, ITransformations2DService transformations2DService)
         {
             ChangeDrawingShapeCommand = new RelayCommand(ChangeDrawingShape);
             DrawShapeCommand = new RelayCommand(DrawShapeHandler);
@@ -134,8 +169,7 @@ namespace Gk_01.ViewModels
             CloseCommand = new RelayCommand(Close);
             CanvasMouseWheelCommand = new RelayCommand(CanvasMouseWheel);
             LoadFileCommand = new RelayCommand(LoadGraphicFile);
-            CanvasMoveCommand = new RelayCommand(CanvasMove);
-            CanvasPaintCommand = new RelayCommand(CanvasPaint);
+            CanvasModeCommand = new RelayCommand(SetCanvasMode);
             SaveFileCommand = new RelayCommand(SaveFile);
             ResetImageCommand = new RelayCommand(ResetImage);
             RedoCommand = new RelayCommand(Redo);
@@ -220,6 +254,7 @@ namespace Gk_01.ViewModels
             // Image filters
             _fileService = fileService;
             _drawingService = drawingService;
+            _transformations2DService = transformations2DService;
 
             _scaleTransform = new ScaleTransform(1.0, 1.0);
             _translateTransform = new TranslateTransform(0, 0);
@@ -227,6 +262,362 @@ namespace Gk_01.ViewModels
             CanvasRenderTransform.Children.Add(_scaleTransform);
             CanvasRenderTransform.Children.Add(_translateTransform);
         }
+
+        private void SetCurrentShape(CustomPath shapePath)
+        {
+            if (_currentShape != null) _currentShape.Stroke = selectedLineColor;
+            _currentShape = shapePath;
+            SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke);
+            SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill);
+            LineThickness = (int)_currentShape!.StrokeThickness;
+            _currentShape.Stroke = Brushes.Blue;
+        }
+
+
+        private void SetCanvasMode(object parameter)
+        {
+            if (parameter is string canvasModeString)
+            {
+                if (Enum.TryParse(typeof(CanvasMode), canvasModeString, out var parseResult))
+                {
+                    var canvasMode = (CanvasMode)parseResult;
+                    switch (canvasMode)
+                    {
+                        case CanvasMode.Paint:
+                            _actualCanvasMode = CanvasMode.Paint;
+                            CanvasCursor = Cursors.Cross;
+                            break;
+                        case CanvasMode.Translate:
+                            _actualCanvasMode = CanvasMode.Translate;
+                            CanvasCursor = Cursors.SizeAll;
+                            break;
+                        case CanvasMode.Rotate:
+                            Uri cursorUri = new Uri("pack://application:,,,/Assets/Rotate.cur");
+                            _actualCanvasMode = CanvasMode.Rotate;
+                            CanvasCursor = new Cursor(Application.GetResourceStream(cursorUri).Stream);
+                            break;
+                        case CanvasMode.Scaling:
+                            _actualCanvasMode = CanvasMode.Scaling;
+                            CanvasCursor = Cursors.SizeNWSE;
+                            break;
+                    }
+
+                    if (_actualCanvasMode == CanvasMode.Translate)
+                    {
+                        TranslationVectorVisibility = Visibility.Visible;
+                        CharacteristicsPointVisibility = Visibility.Collapsed;
+                        RotationAngleVisibility = Visibility.Collapsed;
+                        RotationVectorVisibility = Visibility.Collapsed;
+                    }
+                    else if (_actualCanvasMode == CanvasMode.Rotate)
+                    {
+                        RotationVectorVisibility = Visibility.Visible;
+                        RotationAngleVisibility = Visibility.Visible;
+                        TranslationVectorVisibility = Visibility.Collapsed;
+                        CharacteristicsPointVisibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        TranslationVectorVisibility = Visibility.Collapsed;
+                        RotationAngleVisibility = Visibility.Collapsed;
+                        CharacteristicsPointVisibility = Visibility.Visible;
+                        RotationVectorVisibility = Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
+
+
+        private void CanvasMouseDown(object parameter)
+        {
+            if (parameter is MouseButtonEventArgs e)
+            {
+                Point clickPosition = e.GetPosition(_canvas);
+                var hitElement = _canvas!.InputHitTest(clickPosition) as UIElement;
+
+                switch (_actualCanvasMode)
+                {
+                    case CanvasMode.Move:
+                        _isCanvasMoving = true;
+                        _mouseClickOnCanvasPosition = clickPosition;
+                        break;
+                    case CanvasMode.Paint:
+                        if (_currentShapeType != null) DrawShapeByMouseClick(clickPosition);
+                        if (hitElement != null && hitElement is CustomPath shapePath)
+                        {
+                            SetCurrentShape(shapePath);
+                            //CheckWhatSegmentOfShapeWasClicked(shapePath, clickPosition);
+                        }
+                        else if (_currentShape != null)
+                            SetShapeDefaultAppearance();
+                        break;
+                    case CanvasMode.Translate:
+                        if(_currentShape != null)
+                        {
+                            _isMoving = true;
+                            _mouseClickOnShapePosition = clickPosition;
+                            //CanvasCursor = Cursors.SizeAll;
+                        }
+                        break;
+                    case CanvasMode.Rotate:
+                        if (_currentShape != null)
+                        {
+                            if (!rotatePointSet) AddRotationOrScalingPoint(clickPosition, TransformationPoint.Rotation);
+                            else
+                            {
+                                _isRotateing = true;
+                                _defaultRotationPosition = clickPosition;
+                            } 
+                        }
+                        break;
+                    case CanvasMode.Scaling:
+                        if (_currentShape != null)
+                        {
+                            if (!scalingPointSet) AddRotationOrScalingPoint(clickPosition, TransformationPoint.Scaling);
+                            else
+                            {
+                                _isScaling = true;
+                                _defaultScalingPosition = clickPosition;
+                            }
+                        }
+                        break;
+                }
+            }
+        }
+        private void AddRotationOrScalingPoint(Point clickPosition, TransformationPoint transformationPoint)
+        {
+            if(transformationPoint == TransformationPoint.Rotation)
+            {
+                _rotationPoint = _drawingService.DrawRotationOrScallingPoint(clickPosition);
+                RotationPoint_X = (int)clickPosition.X;
+                RotationPoint_Y = (int)clickPosition.Y;
+                rotatePointSet = true;
+            }
+            else if (transformationPoint == TransformationPoint.Scaling) 
+            {
+                _scalingPoint = _drawingService.DrawRotationOrScallingPoint(clickPosition);
+                ScalingPoint_X = (int)clickPosition.X;
+                ScalingPoint_Y = (int)clickPosition.Y;
+                scalingPointSet = true;
+            }
+
+        }
+
+
+        private void CanvasMouseUp(object parameter)
+        {
+            if (_isResizing)
+            {
+                _isResizing = false;
+                // _currentCharacteriticsPointID = null;
+            }
+            else if (_isMoving)
+            {
+                _isMoving = false;
+                _transformations2DService.EndShapeTransformation(_currentShape!);
+                //_currentShape!.EndShapeTransformation();
+                _currentShape!.ReleaseMouseCapture();
+            }
+            else if (_isRotateing)
+            {
+                _isRotateing = false;
+                rotatePointSet = false;
+                _canvas!.Children.Remove(_rotationPoint);
+                _rotationPoint = null;
+                _transformations2DService.EndShapeTransformation(_currentShape!);
+                //_currentShape!.EndShapeTransformation();
+                _canvas!.ReleaseMouseCapture();
+            }
+            else if (_isScaling)
+            {
+                _isScaling = false;
+                scalingPointSet = false;
+                _canvas!.Children.Remove(_scalingPoint);
+                _scalingPoint = null;
+                _transformations2DService.EndShapeTransformation(_currentShape!);
+                //_currentShape!.EndShapeTransformation();
+                _canvas!.ReleaseMouseCapture();
+            }
+            else if (_isCanvasMoving)
+            {
+                foreach (UIElement child in _canvas!.Children)
+                {
+                    if (child is Image image)
+                    {
+                        imageDefaultLeft = (int)Canvas.GetLeft(image);
+                        imageDefaultTop = (int)Canvas.GetTop(image);
+                    }
+                    if (child is CustomPath childPath)
+                    {
+                        _transformations2DService.EndShapeTransformation(childPath);
+                        //childPath.EndShapeTransformation();
+                    }
+                }
+                _isCanvasMoving = false;
+                _canvas.ReleaseMouseCapture();
+            }
+            if (_actualCanvasMode == CanvasMode.Paint) CanvasCursor = Cursors.Cross;
+            else if (_actualCanvasMode == CanvasMode.Translate) CanvasCursor = Cursors.SizeAll;
+            if (_currentShape != null) _currentShape.ReleaseMouseCapture();
+        }
+
+
+        private void CheckWhatSegmentOfShapeWasClicked(CustomPath shapePath, Point mouseClickPoint)
+        {
+            bool isCharacteristicPoint = false;
+            foreach (var (key, value) in shapePath.DrawingDictionary)
+            {
+                var geometryType = value.Type;
+                var geometry = value.Figure.Geometry;
+
+                if (geometryType == ShapeElement.CharacteristicPoint && geometry.FillContains(mouseClickPoint))
+                {
+                    PrepareToResizeShape(key, mouseClickPoint);
+                    //var a = geometry is CustomPath;
+                    isCharacteristicPoint = true;
+                    break;
+                }
+            }
+            /*if (!isCharacteristicPoint)
+            {
+                PrepareToMoveShape(mouseClickPoint);
+            }*/
+        }
+
+
+        private void PrepareToResizeShape(Guid pointId, Point clickPoint)
+        {
+            _currentCharacteriticsPointID = pointId;
+            P_X = (int)clickPoint.X;
+            P_Y = (int)clickPoint.Y;
+            CanvasCursor = Cursors.ScrollSE;
+            _isResizing = true;
+        }
+
+
+        private void CanvasMouseMove(object parameter)
+        {
+            if (parameter is MouseEventArgs e)
+            {
+                Point currentMousePosition = e.GetPosition(_canvas);
+                if (_isResizing)
+                {
+                    ResizeShape(currentMousePosition);
+                }
+                else if (_isMoving)
+                {
+                    _currentShape!.CaptureMouse();
+                    Translation_X = (int)(currentMousePosition.X - _mouseClickOnShapePosition.X);
+                    Translation_Y = (int)(currentMousePosition.Y - _mouseClickOnShapePosition.Y);
+                }
+                else if (_isRotateing)
+                {
+                    _canvas!.CaptureMouse();
+                    double angleRadians = Math.Atan2(currentMousePosition.Y - _defaultRotationPosition.Y, currentMousePosition.X - _defaultRotationPosition.X);
+                    RotationAngle = angleRadians;
+                }
+                else if (_isScaling)
+                {
+                    _canvas!.CaptureMouse();
+                    Scale_X = Math.Abs(ScalingPoint_X - currentMousePosition.X) / Math.Abs(ScalingPoint_X - _defaultScalingPosition.X);
+                    Scale_Y = Math.Abs(ScalingPoint_Y - currentMousePosition.Y) / Math.Abs(ScalingPoint_Y - _defaultScalingPosition.Y);
+                    Console.WriteLine($"ScaleX {Scale_X}");
+                    Console.WriteLine($"ScaleY {Scale_Y}");
+                }
+                else if (_isCanvasMoving)
+                {
+                    _canvas!.CaptureMouse();
+                    var deltaX = (int)(currentMousePosition.X - _mouseClickOnCanvasPosition.X);
+                    var deltaY = (int)(currentMousePosition.Y - _mouseClickOnCanvasPosition.Y);
+                    foreach (UIElement child in _canvas.Children)
+                    {
+                        if (child is Image image)
+                        {
+                            Canvas.SetLeft(image, imageDefaultLeft + deltaX);
+                            Canvas.SetTop(image, imageDefaultTop + deltaY);
+                        }
+                        if (child is CustomPath childPath)
+                        {
+                            var moveVector = new Vector(deltaX, deltaY);
+                            //childPath.TranslateShape(moveVector);
+                            _transformations2DService.TranslateShape(childPath, moveVector);
+                        }
+                    }
+                }
+
+            }
+        }
+        private void ResizeShape(Point currentMousePosition)
+        {
+            P_X = (int)currentMousePosition.X;
+            P_Y = (int)currentMousePosition.Y;
+        }
+
+
+
+       
+
+        private void SetShapeDefaultAppearance()
+        {
+            _currentShape!.Stroke = selectedLineColor;
+            _currentShape = null;
+        }
+
+        private void ChangeDrawingShape(object parameter)
+        {
+            if (parameter is string shapeTypeString)
+            {
+                if (Enum.TryParse(typeof(ShapeTypeEnum), shapeTypeString, out var parseResult))
+                {
+                    _currentShapeType = (ShapeTypeEnum)parseResult;
+                    if (_currentShape != null && _currentShape.ShapeType != _currentShapeType.ToString())
+                    {
+                        _canvas!.Children.Remove(_currentShape);
+                        _currentShape = _drawingService.DrawShape(_currentShapeType,
+                                                  new List<Point> { _currentShape.StartPoint, _currentShape.EndPoint },
+                                                  ((SolidColorBrush)_currentShape.Stroke).Color,
+                                                  ((SolidColorBrush)_currentShape.Fill).Color,
+                                                  (int)_currentShape.StrokeThickness);
+                        _currentShapeType = null;
+                    }
+
+                    if (_currentShapeType == ShapeTypeEnum.Curve)
+                    {
+                        CurveDegreeVisibility = Visibility.Visible;
+                        CurvePointsVisibility = Visibility.Visible;
+                        AnglesCountVisibility = Visibility.Collapsed;
+                    }
+                    else if (_currentShapeType == ShapeTypeEnum.Polygon)
+                    {
+                        CurveDegreeVisibility = Visibility.Collapsed;
+                        CurvePointsVisibility = Visibility.Collapsed;
+                        AnglesCountVisibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        TranslationVectorVisibility = Visibility.Collapsed;
+                        RotationVectorVisibility = Visibility.Collapsed;
+                        CharacteristicsPointVisibility = Visibility.Visible;
+                        CurveDegreeVisibility = Visibility.Collapsed;
+                        CurvePointsVisibility = Visibility.Collapsed;
+                        AnglesCountVisibility = Visibility.Collapsed;
+                        RotationAngleVisibility = Visibility.Collapsed;
+                    }
+                    controlPoints.Clear();
+                    clickCount = 0;
+                }
+
+            }
+        }
+
+
+
+
+
+
+
+
 
         private RelayCommand SetImageProcessingCommandHandler(ImageProcessor processor, bool isDialog = false, string title = "", string labelText = "", int minValue = int.MinValue, int maxValue = int.MaxValue, int defaultValue = 0)
         {
@@ -460,224 +851,17 @@ namespace Gk_01.ViewModels
                         lineThickness: lineThickness);
                 _currentShapeType = null;
                 _isSaved = false;
-                firstClickPoint = null;
                 clickCount = 0;
                 controlPoints.Clear();
             }
         }
 
 
-        private void CanvasMouseDown(object parameter)
-        {
-            if (parameter is MouseButtonEventArgs e)
-            {
-                Point clickPosition = e.GetPosition(_canvas);
-                var hitElement = _canvas!.InputHitTest(clickPosition) as UIElement;
-
-                if (_currentShapeType != null && _actualCanvasMode == CanvasMode.Paint)
-                    DrawShapeByMouseClick(clickPosition);
-
-                if(_actualCanvasMode == CanvasMode.Move)
-                {
-                    _isCanvasMoving = true;
-                    _mouseClickOnCanvasPosition = clickPosition;
-                    //_canvas.CaptureMouse();
-                }
-
-                if (firstClickPoint == null && _actualCanvasMode == CanvasMode.Paint && hitElement != null && hitElement is CustomPath shapePath)
-                {
-                    // Set previous shape color to default color
-                    if (_currentShape != null)
-                        _currentShape.Stroke = selectedLineColor;
-
-                    _currentShape = shapePath;
-                    SelectedLineColor = ((SolidColorBrush)_currentShape!.Stroke);
-                    SelectedFillColor = ((SolidColorBrush)_currentShape!.Fill);
-                    LineThickness = (int)_currentShape!.StrokeThickness;
-                    _currentShape.Stroke = Brushes.Blue;
-
-                    CheckWhatSegmentOfShapeWasClicked(shapePath, clickPosition);
-                }
-                else if (_currentShape != null)
-                    SetShapeDefaultAppearance();
-            }
-        }
+  
 
 
-        private void CheckWhatSegmentOfShapeWasClicked(CustomPath shapePath, Point mouseClickPoint)
-        {
-            bool isCharacteristicPoint = false;
-            foreach (var (key, value) in shapePath.DrawingDictionary)
-            {
-                var geometryType = value.Type;
-                var geometry = value.Figure.Geometry;
 
-                if (geometryType == ShapeElement.CharacteristicPoint && geometry.FillContains(mouseClickPoint))
-                {
-                    PrepareToResizeShape(key, mouseClickPoint);
-                    //var a = geometry is CustomPath;
-                    isCharacteristicPoint = true;
-                    break;
-                }
-            }
-            if (!isCharacteristicPoint)
-            {
-                PrepareToMoveShape(mouseClickPoint);
-            }
-        }
-
-        private void PrepareToResizeShape(Guid pointId, Point clickPoint)
-        {
-            _currentCharacteriticsPointID = pointId;
-            P_X = (int)clickPoint.X;
-            P_Y = (int)clickPoint.Y;
-            CanvasCursor = Cursors.SizeNWSE;
-            _isResizing = true;
-        }
-
-        private void PrepareToMoveShape(Point mouseClickPoint)
-        {
-            _isMoving = true;
-            _mouseClickOnShapePosition = mouseClickPoint;
-            CanvasCursor = Cursors.SizeAll;
-        }
-
-
-        private void CanvasMouseMove(object parameter)
-        {
-            if (parameter is MouseEventArgs e)
-            {
-                Point currentMousePosition = e.GetPosition(_canvas);
-                if (_isResizing)
-                {
-                    ResizeShape(currentMousePosition);
-                }
-                if (_isMoving)
-                {
-                    _currentShape!.CaptureMouse();
-                    MoveShape(currentMousePosition);
-                }
-                if (_isCanvasMoving)
-                {
-                    _canvas!.CaptureMouse();
-                    var deltaX = (int)(currentMousePosition.X - _mouseClickOnCanvasPosition.X);
-                    var deltaY = (int)(currentMousePosition.Y - _mouseClickOnCanvasPosition.Y);
-                    foreach (UIElement child in _canvas.Children)
-                    {
-                        if(child is Image image)
-                        {
-                            Canvas.SetLeft(image, imageDefaultLeft + deltaX);
-                            Canvas.SetTop(image, imageDefaultTop + deltaY);
-                        }
-                        if(child is CustomPath childPath)
-                        {
-                            var moveVector = new Vector(deltaX, deltaY);
-                            childPath.MoveShape(moveVector);
-                        }
-                    }
-                }
-            
-            }
-        }
-
-        private void ResizeShape(Point currentMousePosition)
-        {
-            P_X = (int)currentMousePosition.X;
-            P_Y = (int)currentMousePosition.Y;
-        }
-
-        private void MoveShape(Point currentMousePosition)
-        {
-            var deltaX = (int)(currentMousePosition.X - _mouseClickOnShapePosition.X);
-            var deltaY = (int)(currentMousePosition.Y - _mouseClickOnShapePosition.Y);
-            var moveVector = new Vector(deltaX, deltaY);
-            _currentShape!.MoveShape(moveVector);
-            _isSaved = false;
-        }
-
-        private void CanvasMouseUp(object parameter)
-        {
-            if (_isResizing)
-            {
-                _isResizing = false;
-               // _currentCharacteriticsPointID = null;
-            }
-            else if (_isMoving)
-            {
-                _isMoving = false;
-                _currentShape!.EndMovingShape();
-                _currentShape!.ReleaseMouseCapture();
-            }
-            else if(_isCanvasMoving ) 
-            {
-                foreach (UIElement child in _canvas!.Children)
-                {
-                    if(child is Image image)
-                    {
-                        imageDefaultLeft = (int)Canvas.GetLeft(image); 
-                        imageDefaultTop = (int)Canvas.GetTop(image);    
-                    }
-                    if (child is CustomPath childPath)
-                    {
-                        childPath.EndMovingShape();
-                    }
-                }
-                _isCanvasMoving = false;
-                _canvas.ReleaseMouseCapture();
-            }
-            if(_actualCanvasMode == CanvasMode.Paint) CanvasCursor = Cursors.Cross;
-            else if (_actualCanvasMode == CanvasMode.Move) CanvasCursor = Cursors.SizeAll;
-            if (_currentShape != null) _currentShape.ReleaseMouseCapture();
-        }   
-
-        private void SetShapeDefaultAppearance()
-        {
-            _currentShape!.Stroke = selectedLineColor;
-            _currentShape = null;
-        }
-
-        private void ChangeDrawingShape(object parameter)
-        {
-            if(parameter is string shapeTypeString)
-            {
-                if (Enum.TryParse(typeof(ShapeTypeEnum), shapeTypeString, out var parseResult))
-                {
-                    _currentShapeType = (ShapeTypeEnum)parseResult;
-                    if(_currentShape != null && _currentShape.ShapeType != _currentShapeType.ToString())
-                    {
-                        _canvas!.Children.Remove(_currentShape);
-                        _currentShape = _drawingService.DrawShape(_currentShapeType,
-                                                  new List<Point> { _currentShape.StartPoint, _currentShape.EndPoint },
-                                                  ((SolidColorBrush)_currentShape.Stroke).Color,
-                                                  ((SolidColorBrush)_currentShape.Fill).Color,
-                                                  (int)_currentShape.StrokeThickness);
-                        firstClickPoint = null;
-                        _currentShapeType = null;
-                    }
-                    if(_currentShapeType == ShapeTypeEnum.Curve)
-                    {
-                        CurveDegreeVisibility = Visibility.Visible;
-                        CurvePointsVisibility = Visibility.Visible;
-                        AnglesCountVisibility = Visibility.Collapsed;
-                    }
-                    else if(_currentShapeType == ShapeTypeEnum.Polygon)
-                    {
-                        CurveDegreeVisibility = Visibility.Collapsed;
-                        CurvePointsVisibility = Visibility.Collapsed;
-                        AnglesCountVisibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        CurveDegreeVisibility = Visibility.Collapsed;
-                        CurvePointsVisibility = Visibility.Collapsed;
-                        AnglesCountVisibility = Visibility.Collapsed;
-                    }
-                    controlPoints.Clear();
-                    clickCount = 0;
-                }
-                    
-            }
-        }
+      
 
         private void Close(object parameter)
         {
@@ -705,7 +889,6 @@ namespace Gk_01.ViewModels
             LineThickness = 1;
             SelectedLineColor = Brushes.Black;
             SelectedFillColor = Brushes.Transparent;
-            firstClickPoint = null;
             _currentCharacteriticsPointID = null;
             _currentShape = null;
             _isResizing = false;
@@ -778,18 +961,6 @@ namespace Gk_01.ViewModels
             }
         }
 
-        private void CanvasPaint(object parameter)
-        {
-            _actualCanvasMode = CanvasMode.Paint;
-            CanvasCursor = Cursors.Cross;
-        }
-
-        private void CanvasMove(object parameter)
-        {
-            _actualCanvasMode = CanvasMode.Move;
-            CanvasCursor = Cursors.SizeAll;
-        }
-
 
         public TransformGroup CanvasRenderTransform
         {
@@ -851,6 +1022,129 @@ namespace Gk_01.ViewModels
             }
         }
 
+        private void RotateShape()
+        {
+            if (_currentShape != null)
+            {
+                var rotationPoint = new Point(RotationPoint_X, RotationPoint_Y);
+                _transformations2DService.RotateShape(_currentShape!, rotationPoint, RotationAngle);
+               // _currentShape!.RotateShape(rotationPoint, RotationAngle);
+                _isSaved = false;
+            }
+        }
+
+        public double RotationAngle
+        {
+            get { return rotationAngle; }
+            set
+            {
+                rotationAngle = value;
+                RotateShape();
+                OnPropertyChanged();
+            }
+        }
+
+        private void ScaleShape()
+        {
+            if (_currentShape != null)
+            {
+                var scalingPoint = new Point(ScalingPoint_X, ScalingPoint_Y);
+                _transformations2DService.ScaleShape(_currentShape, scalingPoint, Scale_X, scale_Y);
+                _isSaved = false;
+            }
+        }
+
+        public double Scale_X
+        {
+            get { return scale_X; }
+            set
+            {
+                scale_X = value;
+                ScaleShape();
+                OnPropertyChanged();
+            }
+        }
+        public double Scale_Y
+        {
+            get { return scale_Y; }
+            set
+            {
+                scale_Y = value;
+                ScaleShape();
+                OnPropertyChanged();
+            }
+        }
+
+        public int RotationPoint_X
+        {
+            get { return rotationPoint_X; }
+            set
+            {
+                rotationPoint_X = value;
+                OnPropertyChanged();
+            }
+        }
+        public int RotationPoint_Y
+        {
+            get { return rotationPoint_Y; }
+            set
+            {
+                rotationPoint_Y = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int ScalingPoint_X
+        {
+            get { return scalingPoint_X; }
+            set
+            {
+                scalingPoint_X = value;
+                OnPropertyChanged();
+            }
+        }
+        public int ScalingPoint_Y
+        {
+            get { return scalingPoint_Y; }
+            set
+            {
+                scalingPoint_Y = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private void TranslateShape()
+        {
+            if (_currentShape != null)
+            {
+                var translateVector = new Vector(Translation_X, Translation_Y);
+                _transformations2DService.TranslateShape(_currentShape, translateVector);
+               // _currentShape!.TranslateShape(translateVector);
+                _isSaved = false;
+            }
+        }
+
+        public int Translation_X
+        {
+            get { return translation_X; }
+            set 
+            {
+                translation_X = value;
+                TranslateShape();
+                OnPropertyChanged();
+            }
+        }
+        public int Translation_Y
+        {
+            get { return translation_Y; }
+            set
+            {
+                translation_Y = value;
+                TranslateShape();
+                OnPropertyChanged();
+            }
+        }
+
         public int P_X
         {
             get { return p_x; }
@@ -907,6 +1201,49 @@ namespace Gk_01.ViewModels
             set
             {
                 polygonAnglesCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+
+        public Visibility RotationAngleVisibility
+        {
+            get => _rotationAngleVisibility;
+            set
+            {
+                _rotationAngleVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+
+        public Visibility RotationVectorVisibility
+        {
+            get => _rotationVectorVisibility;
+            set
+            {
+                _rotationVectorVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+
+        public Visibility CharacteristicsPointVisibility
+        {
+            get => _characteristicsPointVisibility;
+            set
+            {
+                _characteristicsPointVisibility = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Visibility TranslationVectorVisibility
+        {
+            get => _translationVectorVisibility;
+            set
+            {
+                _translationVectorVisibility = value;
                 OnPropertyChanged();
             }
         }
