@@ -5,7 +5,7 @@ namespace Gk_01.Helpers.ImageProcessors.ImageBinarization
 {
     public sealed class BlackPercentSelectionBinarizationProcessor : ImageProcessor
     {
-        protected sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        public sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
         {
             var pixelsCount = width * height;
             int blackPixelsCount = (int)(pixelsCount * (double)value / 100);

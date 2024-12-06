@@ -6,6 +6,6 @@ namespace Gk_01.Helpers.ImageProcessors
     {
         protected int threshold;
         public int Threshold => threshold;
-        protected abstract override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0);
+        public abstract override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0);
     }
 }

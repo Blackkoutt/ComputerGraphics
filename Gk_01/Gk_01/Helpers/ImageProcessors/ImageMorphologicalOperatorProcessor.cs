@@ -1,13 +1,12 @@
 ﻿using Gk_01.Enums;
 using Gk_01.Helpers.ImagePointProcessing;
-using System.Windows.Shapes;
 
 namespace Gk_01.Helpers.ImageProcessors
 {
-    public abstract class ImageOperatorProcessor : ImageProcessor
+    public abstract class ImageMorphologicalOperatorProcessor : ImageProcessor
     {
         protected int size = 3;
-        protected bool[,] structuringElement = 
+        protected bool[,] structuringElement =
         {
             { true, true, true },
             { true, true, true },
@@ -47,29 +46,19 @@ namespace Gk_01.Helpers.ImageProcessors
                     break;
             }
         }
-        protected abstract byte ProcessPixelWithMorphologicalOperator(byte[] pixelData, int width, int height, int imageX, int imageY);
-        protected override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+
+        public int Size
         {
-           // int filterOffset = (size - 1) / 2; // Radius of the filter
-            var copyPixelData = new byte[pixelData.Length];
-            pixelData.CopyTo(copyPixelData, 0);
-
-            byte[] resultPixels = new byte[pixelData.Length];
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    byte processedPixel = ProcessPixelWithMorphologicalOperator(copyPixelData, width, height, x, y);
-                    
-
-                    int pixelIndex = (y * width + x) * 4;
-                    resultPixels[pixelIndex] = processedPixel;     // B
-                    resultPixels[pixelIndex + 1] = processedPixel; // G
-                    resultPixels[pixelIndex + 2] = processedPixel; // R
-                    resultPixels[pixelIndex + 3] = copyPixelData[pixelIndex + 3]; // Alpha
-                }
-            }
-            return resultPixels;  
+            get { return size; }
+            set { size = value; }
         }
+
+        public bool[,] StructuringElement
+        {
+            get { return structuringElement; }
+            set { structuringElement = value; }
+        }
+
+        public override abstract byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0);
     }
 }

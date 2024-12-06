@@ -6,7 +6,7 @@ namespace Gk_01.Helpers.ImageProcessors
     {
         protected abstract (int[] Filter, int FilterSize) GetFilter();
         protected int FilterSum => GetFilter().Filter.Sum();
-        protected override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        public override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
         {
             var outputBitmap = new byte[pixelData.Length];
             pixelData.CopyTo(outputBitmap, 0);

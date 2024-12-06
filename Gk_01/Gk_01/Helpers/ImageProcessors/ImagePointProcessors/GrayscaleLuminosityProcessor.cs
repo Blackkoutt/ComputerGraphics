@@ -4,7 +4,7 @@ namespace Gk_01.Helpers.ImageProcessors.ImagePointProcessors
 {
     public sealed class GrayscaleLuminosityProcessor : ImageProcessor
     {
-        protected sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        public sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
         {
             for (var i = 0; i < pixelData.Length; i += bytesPerPixel)
             {

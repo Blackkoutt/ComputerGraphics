@@ -2,7 +2,7 @@
 {
     public sealed class MeanIterativeSelectionBinarizationProcessor : ImageAutoBinarizationProcessor
     {
-        protected sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        public sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
         {
             threshold = 128;
             int newThreshold;

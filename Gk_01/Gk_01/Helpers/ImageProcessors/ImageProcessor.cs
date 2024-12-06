@@ -8,7 +8,7 @@ namespace Gk_01.Helpers.ImagePointProcessing
 {
     public abstract class ImageProcessor
     {
-        protected abstract byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0);
+        public abstract byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0);
         public void ProcessImage (Image defaultImage, Image currentImage, int value = 0)
         {
             var defaultImageBitmapSource = defaultImage.Source as BitmapSource;

@@ -166,8 +166,10 @@ namespace Gk_01.ViewModels
         public ICommand HitOrMissOperatorCommand { get; set; }
 
 
-        private ImageOperatorProcessor dilatationOperatorProcessor;
-        private ImageOperatorProcessor erosionOperatorProcessor;
+        private ImageMorphologicalOperatorProcessor dilatationOperatorProcessor;
+        private ImageMorphologicalOperatorProcessor erosionOperatorProcessor;
+        private ImageMorphologicalOperatorProcessor openingOperatorProcessor;
+        private ImageMorphologicalOperatorProcessor closingOperatorProcessor;
         private StructuringElementType _currentStructuringElementType = StructuringElementType.Square;
 
         private bool rotatePointSet = false;
@@ -224,8 +226,15 @@ namespace Gk_01.ViewModels
 
             dilatationOperatorProcessor = new DilatationOperatorProcessor();
             DilatationOperatorCommand = SetImageProcessingCommandHandler(processor: dilatationOperatorProcessor);
+            
             erosionOperatorProcessor = new ErosionOperatorProcessor();
             ErosionOperatorCommand = SetImageProcessingCommandHandler(processor: erosionOperatorProcessor);
+            
+            openingOperatorProcessor = new OpeningOperatorProcessor();
+            OpenOperatorCommand = SetImageProcessingCommandHandler(processor: openingOperatorProcessor);
+            
+            closingOperatorProcessor = new ClosingOperatorProcessor();
+            CloseOperatorCommand = SetImageProcessingCommandHandler(processor: closingOperatorProcessor);
 
             ImageGrayscaleAverageMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleAverageMethodProcessor());
             ImageGrayscaleLuminosityMethodCommand = SetImageProcessingCommandHandler(processor: new GrayscaleLuminosityProcessor());
@@ -1324,6 +1333,8 @@ namespace Gk_01.ViewModels
                 structuringElementSize = value;
                 dilatationOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
                 erosionOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
+                openingOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
+                closingOperatorProcessor.SetStructuringElement(_currentStructuringElementType, structuringElementSize);
                 OnPropertyChanged();
             }
         }

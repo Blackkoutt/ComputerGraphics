@@ -1,8 +1,8 @@
 ﻿namespace Gk_01.Helpers.ImageProcessors.MorphologicalOperators
 {
-    public sealed class ErosionOperatorProcessor : ImageOperatorProcessor
+    public sealed class ErosionOperatorProcessor : ImageMorphologicalOperatorProcessor
     {
-        protected override byte ProcessPixelWithMorphologicalOperator(byte[] pixelData, int width, int height, int imageX, int imageY)
+        private byte Erode(byte[] pixelData, int width, int height, int imageX, int imageY)
         {
             byte minPixel = 255;
             int halfSize = (size - 1) / 2;
@@ -23,6 +23,28 @@
                 }
             }
             return minPixel;
+        }
+
+        public sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        {
+            var copyPixelData = new byte[pixelData.Length];
+            pixelData.CopyTo(copyPixelData, 0);
+
+            byte[] resultPixels = new byte[pixelData.Length];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+
+                    var processedPixel = Erode(pixelData, width, height, x, y);
+                    int pixelIndex = (y * width + x) * 4;
+                    resultPixels[pixelIndex] = processedPixel;     // B
+                    resultPixels[pixelIndex + 1] = processedPixel; // G
+                    resultPixels[pixelIndex + 2] = processedPixel; // R
+                    resultPixels[pixelIndex + 3] = copyPixelData[pixelIndex + 3]; // Alpha
+                }
+            }
+            return resultPixels;
         }
     }
 }

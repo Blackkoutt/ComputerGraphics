@@ -5,7 +5,7 @@ namespace Gk_01.Helpers.ImageProcessors.ImageBinarization
 {
     public sealed class EntropyBinarizationProcessor : ImageAutoBinarizationProcessor
     {
-        protected sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
+        public sealed override byte[] ProcessImageBitmap(byte[] pixelData, int width, int height, int bytesPerPixel, int value = 0)
         {
             threshold = 0;
             double maxEntropy = 0;
