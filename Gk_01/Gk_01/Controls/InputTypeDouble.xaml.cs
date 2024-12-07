@@ -77,7 +77,7 @@ namespace Gk_01.Controls
                 InputDoubleValue -= Step;
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
 
         public static readonly DependencyProperty InputDoubleValueProperty =

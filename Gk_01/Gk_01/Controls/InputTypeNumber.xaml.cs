@@ -55,7 +55,7 @@ namespace Gk_01.Controls
                 InputValue -= _incrementStep;
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
 
         public static readonly DependencyProperty InputValueProperty =

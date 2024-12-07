@@ -1,4 +1,4 @@
-﻿using Gk_01.ViewModels;
+﻿using Gk_01.ViewModels.MainWindowViewModelPartials;
 using System.Windows;
 
 namespace Gk_01.Views

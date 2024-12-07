@@ -1,9 +1,10 @@
-﻿using Gk_01.Enums;
+﻿using Gk_01.Core.GraphicFileLoaders;
+using Gk_01.Core.Serialize;
+using Gk_01.Enums;
 using Gk_01.Exceptions;
 using Gk_01.Helpers.DTO;
-using Gk_01.Helpers.GraphicFileLoaders;
-using Gk_01.Helpers.GraphicFileReaders;
-using Gk_01.Helpers.Serialize;
+using Gk_01.Core.GraphicFileLoaders;
+using Gk_01.Core.Serialize;
 using Gk_01.Services.Interfaces;
 using System.Drawing.Imaging;
 using System.IO;

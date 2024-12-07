@@ -12,17 +12,6 @@ namespace Gk_01.Views
     /// </summary>
     public partial class RGBCubeWindow : Window
     {
-        private MeshGeometry3D triangleMesh;
-        private MaterialGroup materialGroup;
-        private Color triangleColor = Colors.Red;
-        
-
-        private byte r = 0;
-        private byte g = 0;
-        private byte b = 0;
-
-        private Model3DGroup modelGroup;
-
         public RGBCubeWindow()
         {
             InitializeComponent();

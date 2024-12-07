@@ -5,6 +5,7 @@
              StartupUri="Views/MainWindow.xaml"
              xmlns:views="clr-namespace:Gk_01.Views"
              xmlns:view_models="clr-namespace:Gk_01.ViewModels"
+             xmlns:main_view_model="clr-namespace:Gk_01.ViewModels.MainWindowViewModelPartials"
              >
     <Application.Resources>
         <ResourceDictionary>
@@ -12,7 +13,7 @@
                 <ResourceDictionary Source="/Styles/Colors.xaml"/>
                 <ResourceDictionary Source="/Styles/Buttons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <DataTemplate DataType="{x:Type view_models:MainWindowViewModel}">
+            <DataTemplate DataType="{x:Type main_view_model:MainWindowViewModel}">
                 <views:MainWindow/>
             </DataTemplate>
             <DataTemplate DataType="{x:Type view_models:RGBCubeViewModel}">

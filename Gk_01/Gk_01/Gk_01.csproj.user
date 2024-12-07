@@ -22,6 +22,9 @@
     <Compile Update="Views\HistogramWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Views\ImageAnalyzeDialog.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Views\ImagePointProcessingDialog.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -49,6 +52,9 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\HistogramWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Views\ImageAnalyzeDialog.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\ImagePointProcessingDialog.xaml">

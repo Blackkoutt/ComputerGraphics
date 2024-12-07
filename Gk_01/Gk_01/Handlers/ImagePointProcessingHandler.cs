@@ -1,7 +1,6 @@
 ﻿using Gk_01.Controls;
-using Gk_01.Helpers.ImagePointProcessing;
-using Gk_01.Helpers.ImageProcessors;
-using Gk_01.Helpers.ImageProcessors.ImageFilters;
+using Gk_01.Core.ImageProcessors;
+using Gk_01.Core.ImageProcessors.ImageFilters;
 using Gk_01.Observable;
 using Gk_01.Views;
 using System.Windows;
@@ -258,7 +257,7 @@ namespace Gk_01.Handlers
         {
             get
             {
-                if (_instance == null) _instance = new ImagePointProcessingHandler();
+                _instance ??= new ImagePointProcessingHandler();
                 return _instance;
             }
         }
